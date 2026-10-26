@@ -266,13 +266,26 @@ for _, x in chn.iterrows():
                      backlog=0, supp='', tail=TAIL, tail_sales='', chsrc='факт матрицы ТТ', src='Продажи (ClickHouse)'))
 stat['nosales'] = N_NOSALES; stat['nosales_new'] = N_NOSALES_NEW; stat['ch_only'] = N_CH_ONLY
 
+SUB_BY_NAME = [('квас','Квасы'),('морс','Морсы. Компоты. Кисели'),('компот','Морсы. Компоты. Кисели'),('кисел','Морсы. Компоты. Кисели'),
+               ('смузи','Смузи'),('комбуч','Комбучи'),('лимонад','Лимонады в стекле, пэт'),('сок ','Соки'),('нектар','Соки'),('сидр','Сидр. Пуаре'),
+               ('пиво','Пиво'),('медовух','Медовуха'),('кофе','Чаи. Кофе'),('чай','Чаи. Кофе'),('вода','Вода')]
+def sub_guess(name):
+    n = str(name).lower()
+    for k, v in SUB_BY_NAME:
+        if k in n: return v
+    return ''
+
 for x in voz_unmatched:
-    name = x['Наименование']; sub = x['Подгруппа']; cat = category_for(sub, name)
+    name = x['Наименование']; sub = x['Подгруппа']
+    sub_flag = []
+    if not (isinstance(sub, str) and sub.strip()):
+        sub = sub_guess(name); sub_flag = ['подгруппа не указана в трекере — определена по названию' if sub else 'подгруппа не указана в трекере']
+    cat = category_for(sub, name)
     ch = channel_for(cat, sub, name)
     R = x['Дата возобновления']; cells = blank(); conf = [0] * H
     vz_status = x['Статус возобновления'] if pd.notna(x['Статус возобновления']) else 'нет статуса'
     c_ok = 1 if vz_status == 'готово' else 0
-    flags = ['нет в 1С', 'нет даты окончания сезона']
+    flags = ['нет в 1С', 'нет даты окончания сезона'] + sub_flag
     if pd.notna(R):
         rm = midx(R.year, R.month)
         if rm < 0:
