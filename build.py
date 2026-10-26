@@ -230,8 +230,8 @@ for _, x in r.iterrows():
             last = end if end is not None else -1
             start = max(rm, 0, last + 1)
             if rm < 0 and (end is None or end >= 0):
-                flags.append(f'дата возобновления в трекере уже прошла ({R:%d.%m.%Y}) — проверьте')
-            if start < H and (end is not None):
+                flags.append(f'дата возобновления в трекере уже прошла ({R:%d.%m.%Y}) — следующий возврат не задан, после хвоста месяцы пустые')
+            if start < H and (end is not None) and rm >= 0:
                 c_ok = 1 if vz_status == 'готово' else 0
                 for i in range(start, H):
                     cells[i] = 'возобновление' if (i == start and rm >= 0) else ch
@@ -255,9 +255,10 @@ for _, x in r.iterrows():
 stat['909_prev'] = excluded_prev
 # SKU с продажами за период, которых нет среди характеристик 1С (vv06) вообще — свежие вводы / расхождение справочников
 ids_in_rows = set(x['id'] for x in rows if x['id'])
+VOZ_UNMATCHED_IDS = set(str(x['ID тов']) for x in voz_unmatched if pd.notna(x['ID тов']) and str(x['ID тов']))
 N_CH_ONLY = 0
 for _, x in chn.iterrows():
-    if x.ID in ids_in_rows or x.ID in set(hk.sku_id.astype(int).astype(str)):
+    if x.ID in ids_in_rows or x.ID in set(hk.sku_id.astype(int).astype(str)) or str(x.ID) in VOZ_UNMATCHED_IDS:
         continue
     sub = str(x.grp); name = str(x.nm); cat = category_for(sub, name); ch = x.channel or channel_for(cat, sub, name)
     N_CH_ONLY += 1
@@ -281,7 +282,9 @@ for x in voz_unmatched:
     if not (isinstance(sub, str) and sub.strip()):
         sub = sub_guess(name); sub_flag = ['подгруппа не указана в трекере — определена по названию' if sub else 'подгруппа не указана в трекере']
     cat = category_for(sub, name)
-    ch = channel_for(cat, sub, name)
+    ch = CH_FACT.get(str(x['ID тов'])) or channel_for(cat, sub, name)
+    if str(x['ID тов']) in CH_FACT:
+        sub_flag.append('есть продажи / матрица ТТ за 4 недели, хотя по трекеру товар на паузе — проверьте, остановлен ли')
     R = x['Дата возобновления']; cells = blank(); conf = [0] * H
     vz_status = x['Статус возобновления'] if pd.notna(x['Статус возобновления']) else 'нет статуса'
     c_ok = 1 if vz_status == 'готово' else 0
