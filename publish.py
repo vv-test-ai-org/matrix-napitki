@@ -95,7 +95,8 @@ def main():
         origin = origin.replace('https://github.com/', f'https://x-access-token:{tok}@github.com/', 1)
     subprocess.run(['git', 'push', '-q', '--force', origin, 'HEAD:gh-pages'], check=True, cwd=tmp)
     subprocess.run(['rm', '-rf', str(tmp)])
-    print('опубликовано в gh-pages:', repo.replace('https://github.com/', 'https://') .replace('/', '.github.io/', 1) + '/')
+    owner, name = repo.removeprefix('https://github.com/').split('/')[:2]
+    print(f'опубликовано в gh-pages: https://{owner}.github.io/{name}/')
 
 
 if __name__ == '__main__':
