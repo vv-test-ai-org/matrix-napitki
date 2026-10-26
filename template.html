@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Матрица Напитки + Алкоголь</title>
+<style>
+:root{
+  --bg:#f6f5f1; --surface:#ffffff; --ink:#1d1f1c; --muted:#6b6f68; --line:#e3e1da; --soft:#efede7; --soft2:#e6e4dc;
+  --accent:#2f6b3a; --accent-ink:#ffffff; --edit:#fff3c4; --edit-ink:#6b4f00;
+  --c-oo:#cfe8d3; --c-off:#e3eccc; --c-on:#d4e6ef; --c-out:#f6d2bd; --c-start:#c9dcf3; --c-res:#e2d4f2;
+  --c-oo-i:#1f4d28; --c-off-i:#46531b; --c-on-i:#1e4a5e; --c-out-i:#7a3512; --c-start-i:#1d4479; --c-res-i:#4d2a78;
+  --warn:#a1501a; --warn-bg:#fbeee3; --dn-bg:#fbeee3; --up-bg:#e4f1e6;
+  --wx-cold2:#d6e4f5; --wx-cold:#e4edf7; --wx-cool:#eef1ea; --wx-warm:#f7ecd4; --wx-hot:#f8dcc4;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141613; --surface:#1c1f1b; --ink:#e8e8e3; --muted:#9a9e95; --line:#30342e; --soft:#242822; --soft2:#2b302a;
+  --accent:#7fbf8a; --accent-ink:#0e1a10; --edit:#4a3d12; --edit-ink:#ffe08a;
+  --c-oo:#24432a; --c-off:#38411f; --c-on:#203d4a; --c-out:#4d2c1b; --c-start:#1f3554; --c-res:#372a4c;
+  --c-oo-i:#bfe6c6; --c-off-i:#dde6b5; --c-on-i:#bfe0ee; --c-out-i:#f6c8ad; --c-start-i:#c3d8f4; --c-res-i:#dccbf2;
+  --warn:#f0a56e; --warn-bg:#3a2a1d; --dn-bg:#3a2a1d; --up-bg:#1f3324;
+  --wx-cold2:#213449; --wx-cold:#1f2d3b; --wx-cool:#252a24; --wx-warm:#3a3220; --wx-hot:#462c1c;
+}}
+:root[data-theme="dark"]{
+  --bg:#141613; --surface:#1c1f1b; --ink:#e8e8e3; --muted:#9a9e95; --line:#30342e; --soft:#242822; --soft2:#2b302a;
+  --accent:#7fbf8a; --accent-ink:#0e1a10; --edit:#4a3d12; --edit-ink:#ffe08a;
+  --c-oo:#24432a; --c-off:#38411f; --c-on:#203d4a; --c-out:#4d2c1b; --c-start:#1f3554; --c-res:#372a4c;
+  --c-oo-i:#bfe6c6; --c-off-i:#dde6b5; --c-on-i:#bfe0ee; --c-out-i:#f6c8ad; --c-start-i:#c3d8f4; --c-res-i:#dccbf2;
+  --warn:#f0a56e; --warn-bg:#3a2a1d; --dn-bg:#3a2a1d; --up-bg:#1f3324;
+  --wx-cold2:#213449; --wx-cold:#1f2d3b; --wx-cool:#252a24; --wx-warm:#3a3220; --wx-hot:#462c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;font-feature-settings:"tnum"}
+header{padding:28px 32px 8px;max-width:1500px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+.sub b{color:var(--ink);font-weight:600}
+main{max-width:1500px;margin:0 auto;padding:0 32px 48px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:18px 0 18px;flex-wrap:wrap}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .cnt{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:12px}
+.tabs .cnt.e{background:var(--edit);color:var(--edit-ink)}
+.tabs .cnt:empty{display:none}
+section{display:none} section.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:26px;font-weight:650;margin-top:2px}
+.kpi .d{color:var(--muted);font-size:12px}
+.controls{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin:0 0 12px;color:var(--muted);font-size:13px}
+.controls label{display:flex;gap:6px;align-items:center;cursor:pointer}
+select,input[type=search],input[type=text]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn.ghost{background:none;color:var(--accent)}
+.btn.warn{border-color:var(--warn);color:var(--warn);background:none}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--muted);font:inherit;font-size:13px;padding:6px 12px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;max-height:76vh}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:middle}
+thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+.num{text-align:right}
+/* svod */
+#svod td.m{text-align:center;min-width:72px;cursor:pointer}
+#svod td.m .n{font-weight:600;font-size:14px}
+#svod td.m .dl{display:inline-block;font-size:11px;margin-left:4px;padding:0 4px;border-radius:6px}
+.dl.up{color:var(--accent);background:var(--up-bg)} .dl.dn{color:var(--warn);background:var(--dn-bg)}
+#svod tr.cat td{background:var(--soft);font-weight:700;border-top:2px solid var(--line)}
+#svod tr.tot td{background:var(--soft2);font-weight:800;border-top:2px solid var(--ink)}
+#svod td.sg{padding-left:22px}
+#svod td.m:hover{outline:2px solid var(--accent);outline-offset:-2px}
+#svod td.m.z .n{color:var(--muted);font-weight:400}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:10px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+/* cells */
+.cl{display:inline-block;min-width:58px;text-align:center;border-radius:4px;padding:2px 4px;font-size:11px;font-weight:600}
+.k-oo{background:var(--c-oo);color:var(--c-oo-i)} .k-off{background:var(--c-off);color:var(--c-off-i)} .k-on{background:var(--c-on);color:var(--c-on-i)}
+.k-out{background:var(--c-out);color:var(--c-out-i)} .k-start{background:var(--c-start);color:var(--c-start-i)} .k-res{background:var(--c-res);color:var(--c-res-i)}
+.k-none{color:var(--muted);font-weight:400;border:1px dashed var(--line)}
+.k-tail{background:var(--soft2);color:var(--muted);background-image:repeating-linear-gradient(135deg,transparent 0 4px,rgba(128,128,128,.22) 4px 6px);border:1px solid var(--line)}
+.plan{background-image:repeating-linear-gradient(135deg,transparent 0 4px,rgba(128,128,128,.28) 4px 6px);outline:1px dashed var(--muted);outline-offset:-1px;font-weight:500}
+.plan.r-низкая{opacity:.55} .plan.r-средняя{opacity:.8}
+#pos td.mc{text-align:center;cursor:pointer;padding:4px 3px}
+#pos td.mc:hover{outline:2px solid var(--accent);outline-offset:-2px}
+#pos td.mc.ed{box-shadow:inset 0 -3px 0 var(--edit-ink)}
+#pos tr.edited td.sticky1,#pos tr.edited td.sticky2{background:var(--edit)}
+#pos td.sticky1,#pos th.sticky1{position:sticky;left:0;background:var(--surface);z-index:1}
+#pos td.sticky2,#pos th.sticky2{position:sticky;left:150px;background:var(--surface);z-index:1;box-shadow:2px 0 0 var(--line)}
+#pos td.subc,#pos th.subc{width:150px;min-width:150px;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+#pos thead th.sticky1,#pos thead th.sticky2{z-index:3}
+#pos thead tr.wx th{top:29px;font-size:11px;color:var(--ink);border-bottom:2px solid var(--line);cursor:default}
+#pos thead tr.wx th.wxc{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+#pos td.name{max-width:300px;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:var(--soft);color:var(--muted);margin-right:3px}
+.tag.w{background:var(--warn-bg);color:var(--warn);white-space:normal;max-width:260px;display:inline-block;line-height:1.3;margin:1px 3px 1px 0}
+.tag.e{background:var(--edit);color:var(--edit-ink)}
+.tag.s-cur{background:var(--c-oo);color:var(--c-oo-i)} .tag.s-out{background:var(--c-out);color:var(--c-out-i)} .tag.s-new{background:var(--c-start);color:var(--c-start-i)} .tag.s-res{background:var(--c-res);color:var(--c-res-i)}
+.mu{color:var(--muted)}
+#pos input.dt{width:96px;padding:3px 6px;font-size:12px;font-variant-numeric:tabular-nums}
+#pos input.dt.ed{background:var(--edit);color:var(--edit-ink)}
+#pos input.cm{width:160px;padding:3px 6px;font-size:12px}
+#pos select{padding:2px 4px;font-size:12px}
+.pgroup{margin:0 0 22px}
+.pgroup h3{font-size:15px;margin:0 0 6px}
+.pgroup h3.lnk{cursor:pointer;color:var(--accent)}
+.pgroup .wrap{max-height:none}
+.method{max-width:1100px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 24px 20px}
+.method h3{margin:18px 0 6px;font-size:15px}
+.method li{margin:3px 0}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);max-width:760px;width:92vw;padding:0}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog .hd{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+dialog td,.pgroup td,#log td{white-space:normal}
+dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
+.x{border:0;background:none;color:var(--muted);font-size:22px;cursor:pointer}
+.pop{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);padding:6px;display:flex;flex-direction:column;gap:3px}
+.pop button{border:0;background:none;text-align:left;cursor:pointer;padding:4px 6px;border-radius:5px;font:inherit;color:var(--ink)}
+.pop button:hover{background:var(--soft)}
+.pop .t{font-size:11px;color:var(--muted);padding:2px 6px}
+
+/* ---- персонажи ---- */
+#mascots{position:fixed;left:0;right:0;bottom:0;height:0;z-index:40;pointer-events:none}
+.mas{position:fixed;bottom:14px;width:64px;height:110px;cursor:pointer;pointer-events:auto;user-select:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.18));transition:transform .2s}
+.mas:hover{transform:scale(1.06)}
+.mas svg{width:100%;height:100%;overflow:visible}
+.mas .leg{transform-origin:50% 0;transform-box:fill-box}
+.mas .arm{transform-origin:50% 10%;transform-box:fill-box}
+.mas .eye{transform-box:fill-box;transform-origin:center}
+.mas.idle .body{animation:breathe 2.4s ease-in-out infinite;transform-origin:50% 100%;transform-box:fill-box}
+.mas.idle .eye{animation:blink 4s steps(1) infinite}
+.mas.walk{animation:walkx var(--dur,14s) linear infinite alternate}
+.mas.walk .body{animation:bob .42s ease-in-out infinite;transform-origin:50% 100%;transform-box:fill-box}
+.mas.walk .legL{animation:stepL .42s ease-in-out infinite}
+.mas.walk .legR{animation:stepR .42s ease-in-out infinite}
+.mas.walk .armL{animation:stepR .42s ease-in-out infinite}
+.mas.walk .armR{animation:stepL .42s ease-in-out infinite}
+.mas.walk.back svg{transform:scaleX(-1)}
+.mas.fall{animation:fall 1.1s cubic-bezier(.5,0,.9,.4) forwards;pointer-events:none}
+.mas.fall .eye{animation:none;transform:scale(1.5,.2)}
+.mas .hint{position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap;opacity:0;transition:opacity .2s}
+.mas.idle:hover .hint{opacity:1}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.03)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+@keyframes stepL{0%,100%{transform:rotate(28deg)}50%{transform:rotate(-28deg)}}
+@keyframes stepR{0%,100%{transform:rotate(-28deg)}50%{transform:rotate(28deg)}}
+@keyframes walkx{from{left:var(--x0)}to{left:calc(100vw - 80px)}}
+@keyframes fall{0%{transform:rotate(0) translateY(0);opacity:1}35%{transform:rotate(80deg) translateY(10px);opacity:1}70%{transform:rotate(95deg) translateY(30px);opacity:1}100%{transform:rotate(100deg) translateY(140px);opacity:0}}
+@media print{#mascots{display:none}}
+@media (max-width:700px){header,main{padding-left:16px;padding-right:16px}}
+@media print{.tabs,.controls,.btn{display:none} section{display:block!important;page-break-after:always} .wrap{max-height:none;overflow:visible} body{background:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Матрица ассортимента: Напитки + Алкоголь</h1>
+  <div class="sub" id="meta"></div>
+</header>
+<main>
+  <nav class="tabs" id="tabs">
+    <button data-t="svod" class="on">Свод по месяцам</button>
+    <button data-t="pos">Позиции</button>
+    <button data-t="log">Мои правки <span class="cnt e" id="ecnt"></span></button>
+    <button data-t="prob">Требуют внимания <span class="cnt" id="pcnt"></span></button>
+    <button data-t="meth">Источники и методика</button>
+  </nav>
+
+  <section id="s-svod" class="on">
+    <div class="kpis" id="kpis"></div>
+    <div class="controls">
+      <span class="seg" id="chView">
+        <button data-v="all" class="on">Вся матрица</button>
+        <button data-v="offp">Присутствие в офлайне</button>
+        <button data-v="onp">Присутствие в онлайне</button>
+        <button data-v="oo">Только офф+онл</button>
+        <button data-v="off">Только офлайн</button>
+        <button data-v="on">Только онлайн</button>
+      </span>
+      <label><input type="checkbox" id="incPlan" checked> с планом (новинки, неподтверждённые возобновления)</label>
+      <label><input type="checkbox" id="incTail" checked> с хвостом выработки</label>
+      <span>· клик по ячейке — список позиций</span>
+    </div>
+    <div class="wrap"><table id="svod"></table></div>
+    <div class="legend" id="svodNote"></div>
+  </section>
+
+  <section id="s-pos">
+    <div class="controls">
+      <select id="fCat"><option value="">Все категории</option></select>
+      <select id="fSub"><option value="">Все подгруппы</option></select>
+      <select id="fTyp"><option value="">Все сегменты</option><option>Текущий ассортимент</option><option>На вывод</option><option>Новинка</option><option>Возобновление</option></select><select id="fSrc"><option value="">Все источники</option><option>1С</option><option>1С + трекер</option><option>Трекер</option><option>Трекер + 1С</option><option>1С + трекер вывода</option><option>Трекер вывода</option><option>Продажи (ClickHouse)</option></select><select id="fFlagK"><option value="">Любой флаг</option></select>
+      <label><input type="checkbox" id="fPlan"> только план</label>
+      <label><input type="checkbox" id="fFlag"> только с флагами</label>
+      <label><input type="checkbox" id="fEd"> только изменённые</label>
+      <input type="search" id="fQ" placeholder="Поиск по названию, ID, ключу">
+      <span id="fN"></span>
+    </div>
+    <div class="legend" style="margin:0 0 10px">Клик по ячейке месяца — сменить канал или убрать из продажи. Даты ввода и остановки редактируются прямо в строке, месяцы перестраиваются автоматически (для in-out новинки «Дата остановки / окончания» — последний месяц продаж). Все изменения попадают во вкладку «Мои правки».</div>
+    <div class="wrap"><table id="pos"></table></div>
+  </section>
+
+  <section id="s-log">
+    <div class="controls">
+      <button class="btn" id="dlLog">Скачать правки (CSV)</button>
+      <button class="btn warn" id="clrLog">Сбросить все правки</button>
+      <select id="lgSort"><option value="time">Сначала новые</option><option value="pos">По позиции</option></select>
+      <select id="lgField"><option value="">Все поля</option><option>Канал</option><option>Дата остановки</option><option>Дата ввода / возобновления</option><option>Ячейка</option><option>Комментарий</option></select>
+      <input type="search" id="lgQ" placeholder="Поиск по позиции">
+      <span>↺ в строке — отменить одну правку. Правки хранятся в этом браузере и переживают перезагрузку страницы. CSV — чтобы перенести решения в Яндекс.Трекер и подать на вход следующей сборке.</span>
+    </div>
+    <div class="wrap"><table id="log"></table></div>
+  </section>
+
+  <section id="s-prob"><div id="probs"></div></section>
+  <section id="s-meth"><div class="method" id="meth"></div></section>
+</main>
+
+
+<div id="mascots">
+  <div class="mas idle" id="masShorli" style="--x0:24px;left:24px;--dur:16s" title="Шорли">
+    <span class="hint">нажми — пойду</span>
+    <svg viewBox="0 0 64 110">
+      <g class="body">
+        <rect class="arm armL" x="4" y="52" width="7" height="26" rx="3.5" fill="#5e8f3c"/>
+        <rect class="arm armR" x="53" y="52" width="7" height="26" rx="3.5" fill="#5e8f3c"/>
+        <path d="M24 2h16v9c0 3 1 5 3 7l4 5c2 2 3 5 3 8v60c0 4-3 7-7 7H21c-4 0-7-3-7-7V31c0-3 1-6 3-8l4-5c2-2 3-4 3-7z" fill="#dff0c4" stroke="#5e8f3c" stroke-width="2"/>
+        <rect x="24" y="0" width="16" height="8" rx="2" fill="#5e8f3c"/>
+        <rect x="16" y="42" width="32" height="30" rx="4" fill="#f6f1d3" stroke="#5e8f3c" stroke-width="1.5"/>
+        <text x="32" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="#2f6b3a" font-family="Inter,Arial,sans-serif">ШОРЛИ</text>
+        <text x="32" y="68" text-anchor="middle" font-size="5" fill="#5e8f3c" font-family="Inter,Arial,sans-serif">яблоко · 330 мл</text>
+        <circle cx="26" cy="34" r="1.6" fill="#c7e3a6"/><circle cx="38" cy="30" r="1.1" fill="#c7e3a6"/><circle cx="31" cy="78" r="1.3" fill="#c7e3a6"/>
+        <g class="eye"><ellipse cx="26" cy="23" rx="2.6" ry="3" fill="#1d1f1c"/><circle cx="27" cy="22" r=".9" fill="#fff"/></g>
+        <g class="eye"><ellipse cx="38" cy="23" rx="2.6" ry="3" fill="#1d1f1c"/><circle cx="39" cy="22" r=".9" fill="#fff"/></g>
+        <path d="M27 30q5 4 10 0" stroke="#1d1f1c" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </g>
+      <rect class="leg legL" x="21" y="96" width="8" height="14" rx="3" fill="#2f6b3a"/>
+      <rect class="leg legR" x="35" y="96" width="8" height="14" rx="3" fill="#2f6b3a"/>
+    </svg>
+  </div>
+  <div class="mas idle" id="masKvas" style="--x0:110px;left:110px;--dur:12s" title="Квас">
+    <span class="hint">нажми — пойду</span>
+    <svg viewBox="0 0 64 110">
+      <g class="body">
+        <rect class="arm armL" x="4" y="48" width="7" height="26" rx="3.5" fill="#7a4a1d"/>
+        <rect class="arm armR" x="53" y="48" width="7" height="26" rx="3.5" fill="#7a4a1d"/>
+        <rect x="12" y="14" width="40" height="82" rx="8" fill="#b9733a" stroke="#7a4a1d" stroke-width="2"/>
+        <ellipse cx="32" cy="14" rx="20" ry="5" fill="#d9d9d2" stroke="#7a4a1d" stroke-width="2"/>
+        <rect x="26" y="10" width="12" height="3" rx="1.5" fill="#8d8d85"/>
+        <rect x="14" y="40" width="36" height="34" rx="5" fill="#f3e5c8" stroke="#7a4a1d" stroke-width="1.5"/>
+        <text x="32" y="58" text-anchor="middle" font-size="10" font-weight="800" fill="#7a4a1d" font-family="Inter,Arial,sans-serif">КВАС</text>
+        <text x="32" y="67" text-anchor="middle" font-size="5" fill="#9a6230" font-family="Inter,Arial,sans-serif">хлебный · 450 мл</text>
+        <path d="M18 20q4 3 8 0" stroke="#e7b989" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>
+        <g class="eye"><ellipse cx="26" cy="29" rx="2.6" ry="3" fill="#1d1f1c"/><circle cx="27" cy="28" r=".9" fill="#fff"/></g>
+        <g class="eye"><ellipse cx="38" cy="29" rx="2.6" ry="3" fill="#1d1f1c"/><circle cx="39" cy="28" r=".9" fill="#fff"/></g>
+        <path d="M27 35q5 4 10 0" stroke="#1d1f1c" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </g>
+      <rect class="leg legL" x="21" y="96" width="8" height="14" rx="3" fill="#7a4a1d"/>
+      <rect class="leg legR" x="35" y="96" width="8" height="14" rx="3" fill="#7a4a1d"/>
+    </svg>
+  </div>
+</div>
+
+<dialog id="dlg"><div class="hd"><b id="dlgT"></b><button class="x" onclick="dlg.close()">×</button></div><div class="bd" id="dlgB"></div></dialog>
+
+<script type="application/json" id="matrix-data">/*__DATA__*/null</script>
+<script>
+const D = JSON.parse(document.getElementById('matrix-data').textContent);
+const M = D.months, H = M.length, M0 = D.m0, TAIL = D.tail;
+const KIND = {'офф+онл':['k-oo','офф+онл'],'оффлайн':['k-off','оффлайн'],'онлайн':['k-on','онлайн'],'хвост':['k-tail','хвост'],'старт':['k-start','старт'],'возобновление':['k-res','возобн.'],'вывод':['k-out','вывод']};
+const CH = ['офф+онл','оффлайн','онлайн'];
+const CAT_ORDER = ['Напитки','Алкоголь'];
+const TYPO = ['Текущий','Возобновление','Новинка'];
+const fmtT = t => (t>0?'+':'') + Math.round(t) + '°';
+const wxColor = w => { const t=(w.avg_min+w.avg_max)/2; return t<=-8?'var(--wx-cold2)':t<=0?'var(--wx-cold)':t<=10?'var(--wx-cool)':t<=18?'var(--wx-warm)':'var(--wx-hot)'; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rowKey = r => r.id || r.key || ('#'+r.i);
+const LS = 'matrix-edits-' + D.stat.week;
+
+// ---------- edits & log
+let edits = {}, log = [], logSeq = 0;
+try { const s = JSON.parse(localStorage.getItem(LS)||'null'); if(s){ edits = s.edits||{}; log = s.log||[]; } } catch(e){}
+log.forEach((l, k) => { if(!l.id) l.id = k + 1; }); logSeq = log.reduce((m, l) => Math.max(m, l.id), 0);
+function save(){ try{ localStorage.setItem(LS, JSON.stringify({edits, log})); }catch(e){} }
+function ed(i){ return edits[i] || (edits[i] = {cells:{}}); }
+function addLog(r, field, from, to){
+  log.push({id: ++logSeq, ts: new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}), i: r.i, key: rowKey(r), name: r.name, sub: r.sub, typ: r.typ, field, from: from||'—', to: to||'—'});
+}
+// отмена одной правки: вернуть поле к значению «было» и убрать запись из журнала
+function undoLog(id){
+  const k = log.findIndex(l => l.id === id); if(k < 0) return;
+  const l = log[k], r = D.rows[l.i];
+  if(r){
+    const e = ed(r.i), from = l.from === '—' ? '' : l.from;
+    if(l.field === 'Канал'){ e.ch = from === r.ch ? '' : from; }
+    else if(l.field === 'Дата остановки' || l.field === 'Дата ввода / возобновления'){ const kk = l.field === 'Дата остановки' ? 'stop' : 'target'; if(from === r[kk]) delete e[kk]; else e[kk] = from; e.cells = {}; }
+    else if(l.field.startsWith('Ячейка ')){ const j = M.indexOf(l.field.slice(7)); if(j >= 0){ delete e.cells[j]; if(eff(r).cells[j] !== from) e.cells[j] = from; } }
+    else if(l.field === 'Комментарий'){ e.cm = from; }
+  }
+  log.splice(k, 1); commit();
+}
+function isEdited(r){ const e = edits[r.i]; return !!(e && (e.ch || e.stop!=null || e.target!=null || e.cm || Object.keys(e.cells||{}).length)); }
+
+// ---------- date helpers
+const pd = s => { const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec((s||'').trim()); return m ? [+m[3], +m[2]] : null; };
+const midx = (y, m) => (y - M0[0]) * 12 + (m - M0[1]);
+
+// ---------- effective row state (base + edits → cells)
+function eff(r){
+  const e = edits[r.i] || {};
+  const ch = e.ch || r.ch;
+  const stop = e.stop != null ? e.stop : r.stop;
+  const target = e.target != null ? e.target : r.target;
+  let cells, conf;
+  const datesChanged = e.stop != null || e.target != null;
+  if(!datesChanged && !e.ch){ cells = r.cells.slice(); conf = r.conf.slice(); }
+  else { [cells, conf] = recompute(r, ch, stop, target); }
+  Object.entries(e.cells||{}).forEach(([j,v]) => { cells[+j] = v; conf[+j] = v ? 0 : conf[+j]; });
+  return {ch, stop, target, cells, conf};
+}
+function recompute(r, ch, stop, target){
+  const cells = Array(H).fill(''), conf = Array(H).fill(0);
+  const base = r.cells, bconf = r.conf;
+  const ds = pd(stop), sm = ds ? midx(ds[0], ds[1]) : null, end = ds ? sm + TAIL : null;
+  if(r.typ === 'Новинка'){
+    const dt = pd(target);
+    if(!dt){ if(r.target || r.cells.some(Boolean)) { for(let j = 0; j < H; j++) cells[j] = r.cells[j] && CH.includes(r.cells[j]) ? ch : r.cells[j]; } return [cells, conf]; }
+    let s = midx(dt[0], dt[1]); if(s < 0) s = 0;
+    const last = sm === null ? H - 1 : Math.min(sm, H - 1);   // in-out: «Дата остановки / окончания» — последний месяц продаж
+    for(let j = s; j <= last; j++) cells[j] = j === s ? 'старт' : ch;
+  } else {
+    if(end === null){ for(let j = 0; j < H; j++) cells[j] = ch; }
+    else { for(let j = 0; j <= Math.min(sm, H-1); j++) cells[j] = ch; for(let j = Math.max(sm + 1, 0); j <= Math.min(end, H-1); j++) cells[j] = 'хвост'; }
+    if(r.typ === 'Возобновление'){
+      const dt = pd(target); const rm = dt ? midx(dt[0], dt[1]) : null;
+      if(rm !== null){ const s = Math.max(rm, 0, end === null ? 0 : end + 1); for(let j = s; j < H; j++) cells[j] = (j === s && rm >= 0) ? 'возобновление' : ch; }
+    }
+  }
+  for(let j = 0; j < H; j++) conf[j] = (cells[j] && base[j] === cells[j]) ? bconf[j] : (cells[j] && base[j] ? bconf[j] : 0);
+  return [cells, conf];
+}
+// channel the cell effectively belongs to
+const cellCh = (v, ch) => CH.includes(v) ? v : ch;
+const inView = (v, ch, view) => {
+  if(!v) return false; const c = cellCh(v, ch);
+  return view==='all' || (view==='offp' && c!=='онлайн') || (view==='onp' && c!=='оффлайн') || (view==='oo' && c==='офф+онл') || (view==='off' && c==='оффлайн') || (view==='on' && c==='онлайн');
+};
+function cellHTML(r, E, j){
+  const v = E.cells[j]; if(!v) return '<span class="cl k-none">—</span>';
+  const [cls, lab] = KIND[v]; const plan = !E.conf[j];
+  return `<span class="cl ${cls}${plan?' plan r-'+(r.ready||'средняя'):''}" title="${esc(v)}${plan?' · план':''}">${lab}</span>`;
+}
+
+// meta
+const s = D.stat;
+document.getElementById('meta').innerHTML = D.src === 'superset'
+ ? `Собрано <b>${D.built}</b> · статусы и даты остановки — <b>1С (vv06.Har_kontr) на ${s.week}</b> · канал — факт матрицы ТТ (ClickHouse, 4 недели) · хвост выработки после месяца остановки — ${TAIL} мес. (оценка по продажам показана в строке) · горизонт <b>${M[0]} — ${M[H-1]}</b><br>
+  Через Superset: 1С-характеристики (${s['909_all']} строк, ${s['909_in']} SKU), карточки новинок (${s.cards_new} новых, ${s.cards_matched} сопоставлено с трекером), продажи и остатки. Через API Трекера: трекер вывода SKUWITHDRAW (возобновления и плановые выводы) и трекер новинок NEWPRODUCT, доска «Путь Напитки» (статус, дата ввода, наименование, in-out, география поставки).`
+ : `Собрано <b>${D.built}</b> · данные 1С: отчёт <b>909</b> (неделя ${s.week}) · горизонт <b>${M[0]} — ${M[H-1]}</b> · хвост распродажи после даты остановки: <b>${TAIL} мес.</b><br>
+  Источники: 909 Алко-Напитки, трекер новинок NEWPRODUCT (выгрузка 07.10.2026), остатки сезонного возобновления. Трекер вывода и история продаж пока не подключены.`;
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x===b));
+  document.querySelectorAll('main section').forEach(x => x.classList.toggle('on', x.id==='s-'+b.dataset.t));
+});
+
+// ---------- svod
+let view = 'all';
+document.querySelectorAll('#chView button').forEach(b => b.onclick = () => { view = b.dataset.v; document.querySelectorAll('#chView button').forEach(x=>x.classList.toggle('on',x===b)); renderSvod(); });
+function subs(){
+  const m = {}; D.rows.forEach(r => { (m[r.cat] = m[r.cat] || new Set()).add(r.sub); });
+  return CAT_ORDER.filter(c=>m[c]).map(c => [c, [...m[c]].sort((a,b)=>a.localeCompare(b,'ru'))]);
+}
+const EFF = new Map();
+function effAll(){ EFF.clear(); D.rows.forEach(r => EFF.set(r.i, eff(r))); }
+function counted(r, E, j){
+  const incPlan = document.getElementById('incPlan').checked, incTail = document.getElementById('incTail').checked;
+  if(E.cells[j] === 'хвост' && !incTail) return false;
+  if(!inView(E.cells[j], E.ch, view)) return false;
+  return incPlan ? true : !!E.conf[j];
+}
+function calc(filter){
+  const a = Array(H).fill(0);
+  D.rows.forEach(r => { if(!filter(r)) return; const E = EFF.get(r.i); for(let j=0;j<H;j++) if(counted(r,E,j)) a[j]++; });
+  return a;
+}
+function renderSvod(){
+  effAll();
+  const groups = subs();
+  const cell = (a,j,cat,sub) => { const d = j>0 ? a[j]-a[j-1] : 0;
+    return `<td class="m${a[j]?'':' z'}" data-cat="${esc(cat)}" data-sub="${esc(sub)}" data-j="${j}"><span class="n">${a[j]}</span>${d?`<span class="dl ${d>0?'up':'dn'}">${d>0?'+':''}${d}</span>`:''}</td>`; };
+  let h = `<thead><tr><th>Категория / подгруппа</th>${M.map(m=>`<th style="text-align:center">${m}</th>`).join('')}</tr></thead><tbody>`;
+  groups.forEach(([cat, ss]) => {
+    const a = calc(r=>r.cat===cat);
+    h += `<tr class="cat"><td>${cat}</td>${a.map((_,j)=>cell(a,j,cat,'')).join('')}</tr>`;
+    ss.forEach(sub => { const a = calc(r=>r.cat===cat&&r.sub===sub); h += `<tr><td class="sg">${esc(sub)}</td>${a.map((_,j)=>cell(a,j,cat,sub)).join('')}</tr>`; });
+  });
+  const ta = calc(()=>true);
+  h += `<tr class="tot"><td>ИТОГО</td>${ta.map((_,j)=>cell(ta,j,'','')).join('')}</tr></tbody>`;
+  const t = document.getElementById('svod'); t.innerHTML = h;
+  t.querySelectorAll('td.m').forEach(td => td.onclick = () => openList(td.dataset.cat, td.dataset.sub, +td.dataset.j));
+  const VN = {all:'вся матрица', offp:'присутствие в офлайне (офф+онл + только офлайн)', onp:'присутствие в онлайне (офф+онл + только онлайн)', oo:'только позиции на всю сеть', off:'только офлайн', on:'только онлайн'};
+  const mx = Math.max(...ta), mn = Math.min(...ta), near = ta[3]-ta[0];
+  const nEd = D.rows.filter(isEdited).length;
+  document.getElementById('kpis').innerHTML = [
+    ['SKU в '+M[0], ta[0], VN[view]],
+    ['Через 3 месяца ('+M[3]+')', ta[3], `${near>=0?'+':''}${near} к текущему`],
+    ['Пик / минимум за горизонт', `${mx} / ${mn}`, `пик: ${M[ta.indexOf(mx)]}, минимум: ${M[ta.indexOf(mn)]}`],
+    ['Моих правок', log.length, nEd ? `${nEd} поз. изменено` : 'свод по исходным данным'],
+    ['Требуют внимания', D.rows.filter(r=>r.flags.length).length, `из ${D.rows.length} позиций`],
+  ].map(([l,v,d])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+  document.getElementById('svodNote').innerHTML = `<span>Разрез: <b>&nbsp;${VN[view]}</b>.</span><span>«Хвост» — выработка остатка после даты остановки (${TAIL} мес.), канал берётся из столбца «Канал» позиции.</span><span>+N / −N — изменение к предыдущему месяцу.</span>`;
+  document.getElementById('ecnt').textContent = log.length || '';
+}
+function openList(cat, sub, j){
+  const list = D.rows.filter(r => (!cat||r.cat===cat) && (!sub||r.sub===sub) && counted(r, EFF.get(r.i), j));
+  document.getElementById('dlgT').textContent = `${sub||cat||'Все'} · ${M[j]} · ${list.length} SKU`;
+  document.getElementById('dlgB').innerHTML = `<table><tbody>${list.map(r=>{const E=EFF.get(r.i);return `<tr><td>${cellHTML(r,E,j)}</td><td>${esc(r.name)}${isEdited(r)?' <span class="tag e">изменено</span>':''}</td><td class="mu">${esc(r.typ)}${E.stop?' · стоп '+E.stop:''}${r.typ==='Новинка'?' · '+esc(r.stnew):''}</td></tr>`}).join('')}</tbody></table>`;
+  document.getElementById('dlg').showModal();
+}
+['incPlan','incTail'].forEach(id => document.getElementById(id).onchange = renderSvod);
+
+// ---------- positions
+const fCat = document.getElementById('fCat'), fSub = document.getElementById('fSub'), fFlagK = document.getElementById('fFlagK');
+const flagKey = f => f.replace(/\s*\(.*$/, '').replace(/«[^»]*»/g, '«…»');
+[...new Set(D.rows.flatMap(r => r.flags.map(flagKey)))].sort((a,b)=>a.localeCompare(b,'ru')).forEach(f => fFlagK.add(new Option(f, f)));
+CAT_ORDER.forEach(c => fCat.add(new Option(c,c)));
+function fillSubs(){ const cur=fSub.value; fSub.length=1; [...new Set(D.rows.filter(r=>!fCat.value||r.cat===fCat.value).map(r=>r.sub))].sort((a,b)=>a.localeCompare(b,'ru')).forEach(s=>fSub.add(new Option(s,s))); fSub.value=cur; }
+fillSubs();
+let sortK = null, sortDir = 1;
+const COLS = [['sub','Подгруппа'],['name','Товар'],['seg','Сегмент'],['src','Источник']];
+const COLS2 = [['ch','Канал'],['st1c','Статус 1С'],['stop','Дата остановки / окончания'],['stnew','Статус новинки / возобн.'],['target','Дата ввода / возобн.'],['inout','In-out'],['reason','Причина остановки'],['tail','Хвост выработки, мес'],['supp','Поставщик'],['idk','ID / ключ']];
+function renderPos(){
+  effAll();
+  const q = document.getElementById('fQ').value.trim().toLowerCase();
+  const typ = document.getElementById('fTyp').value, onlyPlan = document.getElementById('fPlan').checked, onlyFlag = document.getElementById('fFlag').checked, onlyEd = document.getElementById('fEd').checked;
+  let list = D.rows.filter(r => { const E = EFF.get(r.i); return (!fCat.value||r.cat===fCat.value) && (!fSub.value||r.sub===fSub.value) && (!typ||r.seg===typ) && (!document.getElementById('fSrc').value||r.src===document.getElementById('fSrc').value) && (!fFlagK.value||r.flags.some(f=>flagKey(f)===fFlagK.value))
+    && (!onlyPlan || E.conf.some((c,j)=>!c && E.cells[j])) && (!onlyFlag || r.flags.length) && (!onlyEd || isEdited(r))
+    && (!q || (r.name+' '+r.id+' '+r.key).toLowerCase().includes(q)); });
+  const gv = (r,k) => k==='idk' ? (r.id||r.key) : (['ch','stop','target'].includes(k) ? EFF.get(r.i)[k] : r[k]);
+  if(sortK) list = list.slice().sort((a,b)=> String(gv(a,sortK)).localeCompare(String(gv(b,sortK)),'ru',{numeric:true})*sortDir);
+  else list = list.slice().sort((a,b)=> CAT_ORDER.indexOf(a.cat)-CAT_ORDER.indexOf(b.cat) || a.sub.localeCompare(b.sub,'ru') || TYPO.indexOf(a.typ)-TYPO.indexOf(b.typ) || a.name.localeCompare(b.name,'ru'));
+  document.getElementById('fN').textContent = list.length + ' поз.';
+  let h = `<thead><tr>${COLS.map(([k,l],i)=>`<th data-k="${k}" class="${i===0?'sticky1 subc':i===1?'sticky2':''}">${l}${sortK===k?(sortDir>0?' ↑':' ↓'):''}</th>`).join('')}${M.map(m=>`<th style="text-align:center">${m}</th>`).join('')}${COLS2.map(([k,l])=>`<th data-k="${k}">${l}${sortK===k?(sortDir>0?' ↑':' ↓'):''}</th>`).join('')}<th>Флаги</th><th>Комментарий</th></tr>`
+    + `</thead><tbody>`;
+  list.forEach(r => {
+    const E = EFF.get(r.i), e = edits[r.i] || {cells:{}};
+    const dt = (k, v, ok) => ok ? `<input type="text" class="dt${e[k]!=null?' ed':''}" data-i="${r.i}" data-k="${k}" value="${esc(v)}" placeholder="дд.мм.гггг">` : `<span class="mu">${esc(v)}</span>`;
+    h += `<tr class="${isEdited(r)?'edited':''}"><td class="sticky1 subc" title="${esc(r.sub)}">${esc(r.sub)}</td><td class="sticky2 name" title="${esc(r.name)}${r.name_work?' · рабочее название в трекере: '+esc(r.name_work):''}">${esc(r.name)}</td><td><span class="tag s-${({'Текущий ассортимент':'cur','На вывод':'out','Новинка':'new','Возобновление':'res'})[r.seg]}">${r.seg}</span></td><td class="mu">${esc(r.src)}</td>`
+      + Array.from({length:H},(_,j)=>`<td class="mc${e.cells[j]!==undefined?' ed':''}" data-i="${r.i}" data-j="${j}">${cellHTML(r,E,j)}</td>`).join('')
+      + `<td title="${esc(r.chsrc||'')}"><select data-i="${r.i}" class="edCh">${CH.map(o=>`<option${o===E.ch?' selected':''}>${o}</option>`).join('')}</select>${r.chsrc==='факт матрицы ТТ'?' <span class="tag">факт</span>':''}</td><td>${esc(r.st1c)}</td><td>${dt('stop',E.stop,true)}</td><td>${esc(r.stnew)}${r.ready?` <span class="tag">${r.ready}</span>`:''}</td><td>${dt('target',E.target,r.typ!=='Текущий')}</td><td>${esc(r.inout)}</td><td class="mu">${esc(r.reason)}</td><td class="mu">${esc(r.tail)}${r.tail_sales?` <span title="оценка по продажам: остаток на ТТ ÷ средние продажи за 3 мес.">(по продажам ${esc(r.tail_sales)})</span>`:''}</td><td class="mu">${esc(r.supp)}</td><td class="mu">${esc(r.id)}${r.id&&r.key?'<br>':''}${esc(r.key)}</td>`
+      + `<td>${r.flags.map(f=>`<span class="tag w">${esc(f)}</span>`).join('')}</td><td><input type="text" class="cm" data-i="${r.i}" value="${esc(e.cm||'')}"></td></tr>`;
+  });
+  const t = document.getElementById('pos'); t.innerHTML = h + '</tbody>';
+  t.querySelectorAll('thead th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; if(sortK===k) sortDir*=-1; else {sortK=k; sortDir=1;} renderPos(); });
+  t.querySelectorAll('.edCh').forEach(el => el.onchange = () => { const r = D.rows[+el.dataset.i], E = EFF.get(r.i); addLog(r,'Канал',E.ch,el.value); ed(r.i).ch = el.value===r.ch ? '' : el.value; commit(); });
+  t.querySelectorAll('input.dt').forEach(el => el.onchange = () => { const r = D.rows[+el.dataset.i], k = el.dataset.k, E = EFF.get(r.i), v = el.value.trim();
+    if(v && !pd(v)){ alert('Дата в формате дд.мм.гггг'); el.value = E[k]; return; }
+    addLog(r, k==='stop'?'Дата остановки':'Дата ввода / возобновления', E[k], v); ed(r.i)[k] = v===r[k] ? null : v; if(ed(r.i)[k]===null) delete ed(r.i)[k]; ed(r.i).cells = {}; commit(); });
+  t.querySelectorAll('input.cm').forEach(el => el.onchange = () => { const r = D.rows[+el.dataset.i]; addLog(r,'Комментарий',(edits[r.i]||{}).cm,el.value); ed(r.i).cm = el.value; commit(false); });
+  t.querySelectorAll('td.mc').forEach(td => td.onclick = ev => cellMenu(td, ev));
+}
+function cellMenu(td, ev){
+  document.querySelectorAll('.pop').forEach(p=>p.remove());
+  const r = D.rows[+td.dataset.i], j = +td.dataset.j, E = EFF.get(r.i), cur = E.cells[j];
+  const pop = document.createElement('div'); pop.className = 'pop';
+  pop.innerHTML = `<div class="t">${esc(r.name.slice(0,40))} · ${M[j]}</div>` + [...CH,''].map(v=>`<button data-v="${v}">${v ? `<span class="cl ${KIND[v][0]}">${KIND[v][1]}</span>` : '<span class="cl k-none">— не продаётся</span>'}</button>`).join('') + (edits[r.i]&&edits[r.i].cells[j]!==undefined?`<button data-v="__reset">↺ вернуть расчётное</button>`:'');
+  document.body.appendChild(pop);
+  const b = td.getBoundingClientRect(); pop.style.left = (b.left+window.scrollX)+'px'; pop.style.top = (b.bottom+window.scrollY+2)+'px';
+  pop.querySelectorAll('button').forEach(x => x.onclick = () => { const v = x.dataset.v; pop.remove();
+    if(v === '__reset'){ delete edits[r.i].cells[j]; addLog(r, 'Ячейка '+M[j], cur, 'расчётное'); commit(); return; }
+    if(v === cur) return; ed(r.i).cells[j] = v; addLog(r, 'Ячейка '+M[j], cur, v); commit(); });
+  setTimeout(()=>document.addEventListener('click', function h(e){ if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click',h);} }),0);
+  ev.stopPropagation();
+}
+function commit(rerender=true){ save(); renderLog(); if(rerender){ renderPos(); } renderSvod(); }
+fCat.onchange = () => { fillSubs(); renderPos(); };
+['fSub','fTyp','fSrc','fFlagK','fPlan','fFlag','fEd'].forEach(id => document.getElementById(id).onchange = renderPos);
+document.getElementById('fQ').oninput = renderPos;
+
+// ---------- log
+function renderLog(){
+  const t = document.getElementById('log');
+  document.getElementById('ecnt').textContent = log.length || '';
+  if(!log.length){ t.innerHTML = '<tbody><tr><td class="empty">Правок пока нет. Меняйте ячейки месяцев, канал и даты во вкладке «Позиции» — здесь появится список «было → стало».</td></tr></tbody>'; return; }
+  const q = document.getElementById('lgQ').value.trim().toLowerCase(), fld = document.getElementById('lgField').value, srt = document.getElementById('lgSort').value;
+  let L = log.filter(l => (!q || (l.name+' '+l.key+' '+l.sub).toLowerCase().includes(q)) && (!fld || (fld==='Ячейка' ? l.field.startsWith('Ячейка') : l.field===fld)));
+  L = srt==='pos' ? L.slice().sort((a,b)=> a.sub.localeCompare(b.sub,'ru') || a.name.localeCompare(b.name,'ru') || b.id-a.id) : L.slice().reverse();
+  t.innerHTML = `<thead><tr><th>Когда</th><th>Подгруппа</th><th>Позиция</th><th>Тип</th><th>ID / ключ</th><th>Что изменено</th><th>Было</th><th>Стало</th><th></th></tr></thead><tbody>` +
+    L.map(l=>`<tr><td class="mu">${l.ts}</td><td>${esc(l.sub)}</td><td>${esc(l.name)}</td><td>${esc(l.typ)}</td><td class="mu">${esc(l.key)}</td><td>${esc(l.field)}</td><td>${esc(l.from)}</td><td><b>${esc(l.to)}</b></td><td><button class="x" style="font-size:16px" title="Отменить эту правку" data-id="${l.id}">↺</button></td></tr>`).join('') + '</tbody>';
+  t.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => undoLog(+b.dataset.id));
+}
+['lgQ','lgField','lgSort'].forEach(id => document.getElementById(id)[id==='lgQ'?'oninput':'onchange'] = renderLog);
+document.getElementById('dlLog').onclick = () => {
+  if(!log.length){ alert('Правок пока нет'); return; }
+  const lines = [['когда','ID','ключ трекера','товар','подгруппа','тип','что изменено','было','стало','итоговый канал','итоговая дата остановки','итоговая дата ввода','комментарий']];
+  log.forEach(l => { const r = D.rows[l.i], E = eff(r), e = edits[r.i]||{}; lines.push([l.ts, r.id, r.key, r.name, r.sub, r.typ, l.field, l.from, l.to, E.ch, E.stop, E.target, e.cm||'']); });
+  const csv = '﻿' + lines.map(l=>l.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `Правки_матрица_нед${s.week}.csv`; a.click();
+};
+document.getElementById('clrLog').onclick = () => { if(confirm('Удалить все правки и вернуть исходный расчёт?')){ edits = {}; log = []; commit(); } };
+
+// ---------- problems
+function renderProbs(){
+  const by = {};
+  D.rows.forEach(r => r.flags.forEach(f => { const k = flagKey(f); (by[k] = by[k] || []).push(r); }));
+  const n = D.rows.filter(r => r.flags.length).length;
+  let h = `<p class="mu">Все позиции уже во вкладке «Позиции» — здесь те же строки, сгруппированные по флагам. Позиции без месяца ввода и несопоставленные с 1С в свод не входят, пока не задана дата. Клик по заголовку группы открывает её в «Позициях».</p>`;
+  Object.entries(by).sort((a,b)=>b[1].length-a[1].length).forEach(([k, rs]) => {
+    h += `<div class="pgroup"><h3 class="lnk" data-f="${esc(k)}">${esc(k)} — ${rs.length} ›</h3><div class="wrap"><table><thead><tr><th>Позиция</th><th>Подгруппа</th><th>Сегмент</th><th>Источник</th><th>ID / ключ</th><th>Статус</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.sub)}</td><td>${esc(r.seg)}</td><td class="mu">${esc(r.src)}</td><td class="mu">${esc(r.id)}${r.id&&r.key?' / ':''}${esc(r.key)}</td><td class="mu">${esc(r.st1c||r.stnew)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  });
+  document.getElementById('probs').innerHTML = h;
+  document.getElementById('pcnt').textContent = n;
+  document.querySelectorAll('#probs h3.lnk').forEach(el => el.onclick = () => { fFlagK.value = el.dataset.f; renderPos(); document.querySelector('#tabs button[data-t=pos]').click(); });
+}
+
+// ---------- method
+function renderMeth(){
+  const lg = Object.entries(KIND).filter(([k])=>k!=='вывод').map(([k,[c,l]])=>`<span><span class="cl ${c}">${l}</span>${({'офф+онл':'офлайн + онлайн','оффлайн':'только офлайн','онлайн':'только онлайн','хвост':'хвост выработки — остаток распродаётся после даты остановки, не вся сеть','старт':'месяц ввода новинки','возобновление':'первый месяц после сезонной паузы'})[k]}</span>`).join('');
+  document.getElementById('meth').innerHTML = `
+  <h3>Источники данных</h3>
+  <table><thead><tr><th>Что</th><th>Откуда</th><th>Как получено</th><th>Дата</th><th>Объём</th></tr></thead><tbody>${(D.sources||[]).map(x=>`<tr><td style="white-space:normal">${esc(x.what)}</td><td style="white-space:normal">${esc(x.src)}</td><td class="mu" style="white-space:normal">${esc(x.how)}</td><td class="mu">${esc(x.dt)}</td><td class="mu">${esc(x.rows)}</td></tr>`).join('')}</tbody></table>
+  <h3>Сегменты</h3>
+  <ul>
+   <li><span class="tag s-cur">Текущий ассортимент</span> — SKU с продажами или присутствием в матрице ТТ за период (3 полных месяца продаж + 4 недели матрицы ТТ) и рабочей характеристикой в 1С без даты остановки. Характеристики 1С без продаж за период в матрицу не входят (${s.nosales} шт.); SKU с продажами, которых нет в 1С, показаны с источником «Продажи (ClickHouse)» и флагом (${s.ch_only} шт.).</li>
+   <li><span class="tag s-out">На вывод</span> — в 1С статус «На вывод» или «Приостановлена», либо плановая дата вывода из трекера: до месяца остановки включительно — в продаже, дальше — «хвост» выработки.</li>
+   <li><span class="tag s-new">Новинка</span> — только задача трекера NEWPRODUCT в рабочем статусе (от «Согласование наименования» до «Открыть SKU»); карточки 1С «Новая» без задачи трекера в матрицу не берутся. Считается с месяца ввода; без даты — не считается, пока дату не задать. Название — «Наименование в 1С», если уже присвоено (рабочее — в подсказке).</li>
+   <li><span class="tag s-res">Возобновление</span> — позиция из трекера вывода SKUWITHDRAW (статус «Планируется возвращение в сезон» или есть дата возобновления): продаётся с месяца возврата.</li>
+   <li><b>Источник</b> в строке: «1С» — текущий ассортимент; «1С + трекер» — позиция 1С, к которой найдена задача трекера (ключ NEWPRODUCT показан в «ID / ключ»); «Трекер» — только трекер; «Трекер + 1С» — задача трекера, сопоставленная с карточкой 1С по наименованию.</li>
+  </ul>
+  <h3>Значения в ячейках месяцев</h3>
+  <div class="legend">${lg}<span><span class="cl k-oo plan r-высокая">офф+онл</span>штриховка — план (ещё не в 1С); чем бледнее, тем ниже готовность новинки</span><span><span class="cl k-none">—</span>не продаётся, не считается</span></div>
+  <h3>Поканальный свод</h3>
+  <ul>
+   <li><b>Вся матрица</b> — все позиции, у которых в месяце есть хоть какой-то статус продажи.</li>
+   <li><b>Присутствие в офлайне</b> — позиции «офф+онл» и «только офлайн»; <b>в онлайне</b> — «офф+онл» и «только онлайн». Это реальное наполнение канала: позиция на всю сеть считается в обоих разрезах.</li>
+   <li><b>Только офф+онл / офлайн / онлайн</b> — три отдельные таблицы, как в ручной Excel-матрице.</li>
+   <li>Для ячеек «хвост», «старт», «возобновление» канал берётся из столбца «Канал» позиции. Переключатель «с хвостом выработки» убирает хвосты из подсчёта.</li>
+  </ul>
+  <h3>Моделирование и правки</h3>
+  <ul>
+   <li>Клик по ячейке месяца — сменить канал или убрать позицию из продажи в этом месяце. Свод пересчитывается сразу.</li>
+   <li>Смена даты остановки или даты ввода перестраивает все месяцы по тем же правилам, что при сборке (в продаже до месяца остановки, затем хвост ${TAIL} мес.; «старт» в месяц ввода; для новинки «Дата остановки / окончания» — последний месяц in-out). Ручные правки ячеек при этом сбрасываются.</li>
+   <li>Каждое изменение пишется во вкладку «Мои правки» как «было → стало»; ↺ в строке отменяет одну правку, список можно отсортировать по позиции и отфильтровать по полю. Выгрузите CSV, чтобы перенести решения в Яндекс.Трекер и подать на вход следующей еженедельной сборке.</li>
+   <li>Правки живут в браузере, в котором открыт файл; «Сбросить все правки» возвращает исходный расчёт.</li>
+  </ul>
+  <h3>Как собрано</h3>
+  <ul>
+   <li><b>База — SKU с продажами за период.</b> Из характеристик 1С (vv06, через Superset; подгруппы пути Напитки без Мировых брендов) берутся только SKU с продажами за 3 полных месяца или присутствием в матрице ТТ за 4 недели: ${s['909_in']} SKU; позиции с датой остановки остаются в любом случае (их ведёт трекер вывода); ${s.nosales} характеристик без продаж исключены. Статус позиции: есть рабочая активная характеристика → продаётся; иначе активная с будущей датой остановки → в продаже до месяца остановки, затем хвост; иначе выведенная — последняя дата остановки.</li>
+   <li><b>Хвост выработки</b> — ${TAIL} мес. после месяца остановки (договорённость 23.10, первый этап; формула из трекера вывода подключается позже). Оценка по продажам — остаток на ТТ ÷ средние продажи за 3 мес., от 1 до 3 мес. — показана в столбце «Хвост выработки» для ${s.tail_fact} поз. для сверки.</li>
+   <li><b>Канал</b> — по факту матрицы ТТ за 4 недели: позиция в ассортименте дарксторов → онлайн, магазинов → офлайн, обоих → офф+онл (${s.ch_fact} поз., помечены «факт»). Без продаж — правило по подгруппе (пиво, сидр, алкогольная медовуха — офлайн; остальное — офф+онл).</li>
+   <li><b>Сезонные возобновления</b> — с месяца «Дата возобновления» до конца горизонта. Подтверждено только со статусом «готово». Источник — трекер вывода SKUWITHDRAW: ${s.voz_in} позиций с датой возобновления, ${s.voz_unmatched} не найдены в 1С. Плановая дата вывода из трекера, которой ещё нет в 1С, показывается как план (серая зона).</li>
+   <li><b>Новинки</b> — трекер NEWPRODUCT (${s.new_all} задач): в матрицу берутся только рабочие статусы от «Согласование наименования» до «Открыть SKU» — ${s.new_taken}; не берутся ${s.new_skipped} (беклог, отложено, торг, согласование КП, дегустация, в продаже, постоянный ассортимент, отказ, закрыто — решение заказчика 23.10). Уже в 1С с поставкой — учтены через 1С (${s.new_insale_ok}); без месяца ввода — ${s.new_nodate}; в плане — ${s.new_inplan}. Со статуса «Заведение в ЛК» карточка должна быть в 1С: сопоставление по «Наименование в 1С», ${s.cards_matched} новинок получили ID, не найдено — ${s.new_card_missing} (флаг). Если месяц ввода прошёл, а продаж нет — старт в ${M[0]} с флагом.</li>
+   <li><b>Готовность новинки</b>: высокая — статусы от «Заведение в ЛК» (карточка уже в 1С); средняя — согласования до заведения.</li>
+  </ul>
+  <h3>Чего пока нет</h3>
+  <ul>
+   <li>Формула хвоста выработки из трекера вывода (остаток тиража этикетки + склад поставщика ÷ продажи) — пока ${TAIL} мес. и оценка по продажам рядом.</li>
+   <li>География поставки новинок из трекера (поле появится у Кости) — пока канал новинок по полкам из трекера или по правилу.</li>
+   <li>Конечный месяц для in-out новинок и дата окончания сезона для возобновлений — в выгрузках их нет; задаются вручную в «Дата остановки / окончания», иначе позиция тянется до конца горизонта с флагом.</li>
+   <li>Трекер новинок по API — ждём доступ к очереди NEWPRODUCT; пока выгрузка CSV.</li>
+   <li>Автоматическая запись правок обратно в Яндекс.Трекер — пока вручную по списку «Мои правки».</li>
+  </ul>`;
+}
+renderSvod(); renderPos(); renderLog(); renderProbs(); renderMeth();
+// ---------- персонажи
+document.querySelectorAll('.mas').forEach(el => {
+  el.addEventListener('animationiteration', e => { if(e.animationName === 'walkx') el.classList.toggle('back'); });
+  el.addEventListener('click', () => {
+    if(el.classList.contains('idle')){ el.classList.remove('idle'); el.classList.add('walk'); return; }
+    if(el.classList.contains('walk')){
+      const left = el.getBoundingClientRect().left; el.style.left = left + 'px'; el.style.setProperty('--x0', left + 'px');
+      el.classList.remove('walk','back'); el.classList.add('fall');
+      el.addEventListener('animationend', () => el.remove(), {once:true});
+    }
+  });
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+name: Обновить матрицу
+
+# Кнопка «Обновить данные» на странице ведёт сюда (Run workflow). Сборка идёт на self-hosted runner внутри контура
+# (см. runner/setup.sh): только оттуда доступны Superset и 1С, и только там лежат креды (.env) и данные (data/).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'   # понедельник 07:00 МСК
+
+concurrency:
+  group: rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: self-hosted
+    timeout-minutes: 40
+    steps:
+      - name: Сборка и публикация из локальной копии проекта
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${MATRIX_HOME:?переменная MATRIX_HOME не задана в .env раннера (runner/setup.sh)}"
+          cd "$MATRIX_HOME"
+          git pull --ff-only
+          python3 publish.py

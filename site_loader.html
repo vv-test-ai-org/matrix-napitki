@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Матрица Напитки + Алкоголь</title>
+<style>
+:root{--bg:#f6f5f1;--surface:#fff;--ink:#1d1f1c;--muted:#6b6f68;--line:#e3e1da;--accent:#2f6b3a;--accent-ink:#fff;--warn:#a1501a;--warn-bg:#fbeee3}
+@media (prefers-color-scheme: dark){:root{--bg:#141613;--surface:#1c1f1b;--ink:#e8e8e3;--muted:#9a9e95;--line:#30342e;--accent:#7fbf8a;--accent-ink:#0e1a10;--warn:#f0a56e;--warn-bg:#3a2a1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 30px;max-width:460px;width:100%}
+h1{font-size:20px;margin:0 0 6px}
+.mu{color:var(--muted);font-size:13px}
+form{display:flex;gap:8px;margin:18px 0 10px}
+input{flex:1;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);letter-spacing:.08em}
+button{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.ghost{background:none;color:var(--accent)}
+.err{color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 12px;font-size:13px;display:none}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Матрица ассортимента: Напитки + Алкоголь</h1>
+  <div class="mu">Данные собраны <b id="built"></b>. Страница зашифрована: введите код доступа, расшифровка происходит в вашем браузере, код никуда не отправляется.</div>
+  <form id="f"><input id="code" type="password" placeholder="код доступа" autocomplete="current-password" autofocus><button type="submit">Открыть</button></form>
+  <div class="err" id="err">Неверный код или повреждённые данные.</div>
+  <label class="mu" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="remember" style="width:auto;flex:0"> запомнить код в этом браузере</label>
+  <div class="row">
+    <span class="mu">Обновить данные: запустится сборка из 1С, Superset и Трекера, страница обновится через несколько минут.</span>
+    <button class="ghost" id="upd" type="button">Обновить данные ↗</button>
+  </div>
+</div>
+<script type="application/json" id="enc">/*__ENC__*/null</script>
+<script type="application/json" id="meta">/*__META__*/null</script>
+<script>
+const ENC = JSON.parse(document.getElementById('enc').textContent), META = JSON.parse(document.getElementById('meta').textContent);
+document.getElementById('built').textContent = META.built.split('-').reverse().join('.');
+document.getElementById('upd').onclick = () => window.open(META.repo + '/actions/workflows/rebuild.yml', '_blank');
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function open(code){
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(ENC.salt), iterations:ENC.iter, hash:'SHA-256'}, km, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(ENC.iv)}, key, b64(ENC.ct));
+  const html = new TextDecoder().decode(pt);
+  document.open(); document.write(html); document.close();
+}
+document.getElementById('f').onsubmit = async e => {
+  e.preventDefault(); const code = document.getElementById('code').value.trim(); document.getElementById('err').style.display = 'none';
+  try { await open(code); try{ if(document.getElementById('remember')?.checked) localStorage.setItem('matrix-code', code); }catch(_){} }
+  catch(err){ document.getElementById('err').style.display = 'block'; }
+};
+try { const saved = localStorage.getItem('matrix-code'); if(saved){ document.getElementById('code').value = saved; open(saved).catch(()=>{}); } } catch(_){}
+</script>
+</body>
+</html>

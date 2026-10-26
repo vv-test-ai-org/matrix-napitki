@@ -1,0 +1,11 @@
+# данные и внутренние документы не публикуются (репозиторий публичный — GitHub Pages на бесплатном плане)
+data/
+docs/
+sql/
+out/
+site/
+.env
+.pages-code
+.gh-pages-tmp/
+__pycache__/
+.DS_Store
