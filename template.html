@@ -93,7 +93,7 @@ thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-size:12p
 #pos thead th.sticky1,#pos thead th.sticky2{z-index:3}
 #pos thead tr.wx th{top:29px;font-size:11px;color:var(--ink);border-bottom:2px solid var(--line);cursor:default}
 #pos thead tr.wx th.wxc{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-#pos td.name{max-width:300px;overflow:hidden;text-overflow:ellipsis}
+#pos td.name{min-width:280px;max-width:460px;white-space:normal;line-height:1.25}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:var(--soft);color:var(--muted);margin-right:3px}
 .tag.w{background:var(--warn-bg);color:var(--warn);white-space:normal;max-width:260px;display:inline-block;line-height:1.3;margin:1px 3px 1px 0}
 .tag.e{background:var(--edit);color:var(--edit-ink)}
@@ -159,6 +159,7 @@ dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
 <header>
   <h1>Матрица ассортимента: Напитки + Алкоголь</h1>
   <div class="sub" id="meta"></div>
+  <div class="sub" id="refresh" style="display:none;margin-top:8px"><a class="btn" id="refreshBtn" target="_blank" rel="noopener">Актуализировать данные ↗</a> <span class="mu">запускает сборку из 1С, Superset и Трекера на раннере (Run workflow); страница обновится через несколько минут, затем перезагрузите её</span></div>
 </header>
 <main>
   <nav class="tabs" id="tabs">
@@ -210,7 +211,7 @@ dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
       <select id="lgSort"><option value="time">Сначала новые</option><option value="pos">По позиции</option></select>
       <select id="lgField"><option value="">Все поля</option><option>Канал</option><option>Дата остановки</option><option>Дата ввода / возобновления</option><option>Ячейка</option><option>Комментарий</option></select>
       <input type="search" id="lgQ" placeholder="Поиск по позиции">
-      <span>↺ в строке — отменить одну правку. Правки хранятся в этом браузере и переживают перезагрузку страницы. CSV — чтобы перенести решения в Яндекс.Трекер и подать на вход следующей сборке.</span>
+      <span>«Удалить» в строке убирает одну правку и возвращает полю исходное значение. Правки хранятся в этом браузере и переживают перезагрузку страницы. CSV — чтобы перенести решения в Яндекс.Трекер и подать на вход следующей сборке.</span>
     </div>
     <div class="wrap"><table id="log"></table></div>
   </section>
@@ -355,6 +356,7 @@ function cellHTML(r, E, j){
 }
 
 // meta
+if(D.repo){ document.getElementById('refresh').style.display=''; document.getElementById('refreshBtn').href = D.repo + '/actions/workflows/rebuild.yml'; }
 const s = D.stat;
 document.getElementById('meta').innerHTML = D.src === 'superset'
  ? `Собрано <b>${D.built}</b> · статусы и даты остановки — <b>1С (vv06.Har_kontr) на ${s.week}</b> · канал — факт матрицы ТТ (ClickHouse, 4 недели) · хвост выработки после месяца остановки — ${TAIL} мес. (оценка по продажам показана в строке) · горизонт <b>${M[0]} — ${M[H-1]}</b><br>
@@ -490,7 +492,7 @@ function renderLog(){
   let L = log.filter(l => (!q || (l.name+' '+l.key+' '+l.sub).toLowerCase().includes(q)) && (!fld || (fld==='Ячейка' ? l.field.startsWith('Ячейка') : l.field===fld)));
   L = srt==='pos' ? L.slice().sort((a,b)=> a.sub.localeCompare(b.sub,'ru') || a.name.localeCompare(b.name,'ru') || b.id-a.id) : L.slice().reverse();
   t.innerHTML = `<thead><tr><th>Когда</th><th>Подгруппа</th><th>Позиция</th><th>Тип</th><th>ID / ключ</th><th>Что изменено</th><th>Было</th><th>Стало</th><th></th></tr></thead><tbody>` +
-    L.map(l=>`<tr><td class="mu">${l.ts}</td><td>${esc(l.sub)}</td><td>${esc(l.name)}</td><td>${esc(l.typ)}</td><td class="mu">${esc(l.key)}</td><td>${esc(l.field)}</td><td>${esc(l.from)}</td><td><b>${esc(l.to)}</b></td><td><button class="x" style="font-size:16px" title="Отменить эту правку" data-id="${l.id}">↺</button></td></tr>`).join('') + '</tbody>';
+    L.map(l=>`<tr><td class="mu">${l.ts}</td><td>${esc(l.sub)}</td><td>${esc(l.name)}</td><td>${esc(l.typ)}</td><td class="mu">${esc(l.key)}</td><td>${esc(l.field)}</td><td>${esc(l.from)}</td><td><b>${esc(l.to)}</b></td><td><button class="btn" style="white-space:nowrap" title="Удалить эту правку: поле вернётся к исходному значению" data-id="${l.id}">✕ Удалить</button></td></tr>`).join('') + '</tbody>';
   t.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => undoLog(+b.dataset.id));
 }
 ['lgQ','lgField','lgSort'].forEach(id => document.getElementById(id)[id==='lgQ'?'oninput':'onchange'] = renderLog);

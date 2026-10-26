@@ -437,8 +437,10 @@ weather = []
 for i in range(H):
     y, m = M0[0] + (M0[1] - 1 + i) // 12, (M0[1] - 1 + i) % 12 + 1
     weather.append(wx['months'].get(f'{y-1}-{m:02d}'))
+import subprocess as _sp
+REPO = _sp.run(['git','config','--get','remote.origin.url'], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__))).stdout.strip().replace('git@github.com:','https://github.com/').removesuffix('.git') or None
 data = dict(sources=sources, weather=None, months=months, rows=rows, problems=problems, nodate=nodate_list, stat=stat,
-            built=date.today().strftime('%d.%m.%Y'), tail=TAIL, m0=list(M0), src='superset')
+            built=date.today().strftime('%d.%m.%Y'), tail=TAIL, m0=list(M0), src='superset', repo=REPO)
 tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'template.html'), encoding='utf-8').read()
 html = tpl.replace('/*__DATA__*/null', json.dumps(data, ensure_ascii=False, default=str, allow_nan=False).replace('</', '<\\/'))
 open(OUT, 'w', encoding='utf-8').write(html)
