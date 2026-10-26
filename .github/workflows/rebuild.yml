@@ -4,6 +4,11 @@ name: Обновить матрицу
 # (см. runner/setup.sh): только оттуда доступны Superset и 1С, и только там лежат креды (.env) и данные (data/).
 on:
   workflow_dispatch:
+    inputs:
+      fetch:
+        description: 'Обновить данные из Superset и Трекера (иначе пересобрать из текущих data/)'
+        type: boolean
+        default: true
   schedule:
     - cron: '0 4 * * 1'   # понедельник 07:00 МСК
 
@@ -23,4 +28,5 @@ jobs:
           : "${MATRIX_HOME:?переменная MATRIX_HOME не задана в .env раннера (runner/setup.sh)}"
           cd "$MATRIX_HOME"
           git pull --ff-only
-          "${MATRIX_PYTHON:-python3}" publish.py
+          if [ "${{ github.event.inputs.fetch }}" = "false" ]; then ARGS=--no-fetch; else ARGS=; fi
+          "${MATRIX_PYTHON:-python3}" publish.py $ARGS
