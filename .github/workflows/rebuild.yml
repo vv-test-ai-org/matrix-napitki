@@ -16,9 +16,14 @@ concurrency:
   group: rebuild
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   rebuild:
     runs-on: self-hosted
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 40
     steps:
       - name: Сборка и публикация из локальной копии проекта

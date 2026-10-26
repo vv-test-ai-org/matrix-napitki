@@ -90,6 +90,9 @@ def main():
     subprocess.run(['git', 'add', '-A'], check=True, cwd=tmp)
     subprocess.run(['git', '-c', 'user.name=matrix-bot', '-c', 'user.email=matrix-bot@users.noreply.github.com', 'commit', '-q', '-m', f'matrix {today} {time.strftime("%H:%M")}'], check=True, cwd=tmp)
     origin = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], capture_output=True, text=True, cwd=HERE).stdout.strip()
+    tok = os.environ.get('GITHUB_TOKEN')   # в GitHub Actions: push токеном задания, у сервиса раннера нет git-кредов
+    if tok and origin.startswith('https://github.com/'):
+        origin = origin.replace('https://github.com/', f'https://x-access-token:{tok}@github.com/', 1)
     subprocess.run(['git', 'push', '-q', '--force', origin, 'HEAD:gh-pages'], check=True, cwd=tmp)
     subprocess.run(['rm', '-rf', str(tmp)])
     print('опубликовано в gh-pages:', repo.replace('https://github.com/', 'https://') .replace('/', '.github.io/', 1) + '/')
