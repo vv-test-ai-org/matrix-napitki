@@ -6,7 +6,7 @@ import os
 X = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data') + '/'
 OUT = sys.argv[1]
 M0 = (2026, 10)
-H = 12
+H = 15
 TAIL = 1
 RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
 MON_FULL = {m: i+1 for i, m in enumerate(['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'])}
@@ -102,10 +102,24 @@ chn = pd.read_csv(X + 'channel_ch.csv'); chn['ID'] = chn.sku_id.astype(int).asty
 CH_FACT = dict(zip(chn.ID, chn.channel))
 # sales tail (ClickHouse): stock on stores / avg monthly sales over last 3 full months, clamped 1..3
 st = pd.read_csv(X + 'sales_tail.csv'); st['ID'] = st.sku_id.astype(int).astype(str); N_TAIL = len(st)
-TAILS = {}
+# хвост выработки (решение 27.10): месяцы = (остаток на ТТ + остаток тиража этикетки из трекера вывода) ÷ средние продажи за 3 мес.,
+# округление вверх, от 0 до 4 мес.; без данных о продажах — 1 мес. по умолчанию с флагом. Оценка — план (штриховка).
+TAIL_MAX = 4
+_wd0 = pd.read_csv(X + 'withdraw.csv', dtype=str).fillna('')
+LABEL_REST = {}
+for _, x in _wd0.iterrows():
+    v = re.sub(r'[^0-9]', '', str(x.get('label_rest', '')))
+    if x.get('sku_id') and v: LABEL_REST[str(x.sku_id)] = max(LABEL_REST.get(str(x.sku_id), 0), int(v))
+TAILS = {}      # ID -> (мес., текст расчёта)
 for _, x in st.iterrows():
-    if pd.notna(x.stock_last) and pd.notna(x.avg_qty_3m) and x.avg_qty_3m > 0 and x.stock_last > 0:
-        TAILS[x.ID] = int(min(3, max(1, math.ceil(x.stock_last / x.avg_qty_3m))))
+    if pd.notna(x.avg_qty_3m) and x.avg_qty_3m > 0:
+        stock = float(x.stock_last) if pd.notna(x.stock_last) else 0.0
+        lab = LABEL_REST.get(x.ID, 0); raw = (stock + lab) / x.avg_qty_3m
+        m = int(min(TAIL_MAX, math.ceil(raw - 0.05)))   # 0, если остаток меньше ~5% месячных продаж
+        TAILS[x.ID] = (m, f'остаток ТТ {stock:,.0f}'.replace(',', ' ') + (f' + этикетка {lab:,}'.replace(',', ' ') if lab else '') + f' ÷ продажи {x.avg_qty_3m:,.0f}/мес = {raw:.1f} → {m} мес.'.replace(',', ' '))
+def tail_for(ID):
+    if ID in TAILS: return TAILS[ID][0], TAILS[ID][1], False
+    return TAIL, 'нет данных о продажах за 3 мес. — 1 мес. по умолчанию', True
 
 # ---------- база матрицы = SKU с продажами / присутствием в матрице ТТ за период (решение заказчика 26.10)
 # период: последние 3 полных месяца продаж (sales_tail) + последние 4 недели матрицы ТТ (channel_ch).
@@ -173,8 +187,7 @@ def blank():
 for _, x in r.iterrows():
     cat, sub, name = x['grp'], x['Подгруппа'], x['Товар']
     ch = CH_FACT.get(x['ID']) or channel_for(cat, sub, name)
-    tail = TAIL; tail_sales = TAILS.get(x['ID'], '')   # хвост выработки: по договорённости 23.10 — 1 мес.; оценка по продажам показывается рядом, если отличается
-    if tail_sales == TAIL: tail_sales = ''
+    tail, tail_sales, tail_default = tail_for(x['ID'])   # хвост выработки по остаткам и продажам (27.10)
     cells = blank(); conf = [1] * H
     flags = []
     st = x['Статус'] if pd.notna(x['Статус']) else ''
@@ -215,7 +228,8 @@ for _, x in r.iterrows():
             cells[i] = ch
         for i in range(max(sm + 1, 0), min(end, H - 1) + 1):
             cells[i] = 'хвост'
-            if stop_plan: conf[i] = 0
+            conf[i] = 0        # хвост — расчётная оценка
+        if tail_default and end >= 0: flags.append('хвост 1 мес. по умолчанию: нет данных о продажах за 3 мес.')
         if st == 'Рабочая' and not stop_plan:
             flags.append('«Рабочая» с датой остановки')
             prob('Статус «Рабочая», но стоит дата остановки', '1С', name, f'ID {x["ID"]}, дата {D:%d.%m.%Y}')
@@ -425,7 +439,7 @@ stat['new_skipped_by'] = skipped_by
 # новинки — только из трекера NEWPRODUCT (решение заказчика 26.10): карточки 1С «Новая» без задачи трекера в матрицу не попадают
 matched_ids = set(x['id'] for x in rows if x['typ'] == 'Новинка' and x['id'])
 stat['cards_new'] = int((cards.first_supply_min_dt.isna()).sum()); stat['cards_matched'] = len(matched_ids)
-stat['ch_fact'] = sum(1 for x in rows if x.get('chsrc') == 'факт матрицы ТТ'); stat['tail_fact'] = sum(1 for x in rows if x.get('tail_sales') not in ('', None))
+stat['ch_fact'] = sum(1 for x in rows if x.get('chsrc') == 'факт матрицы ТТ'); stat['tail_fact'] = sum(1 for x in rows if x.get('id') in TAILS); stat['tail_max'] = TAIL_MAX
 stat.update({'new_' + k: v_ for k, v_ in c.items()})
 
 for i, x in enumerate(rows):

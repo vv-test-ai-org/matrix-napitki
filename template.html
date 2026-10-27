@@ -328,7 +328,7 @@ function eff(r){
 function recompute(r, ch, stop, target){
   const cells = Array(H).fill(''), conf = Array(H).fill(0);
   const base = r.cells, bconf = r.conf;
-  const ds = pd(stop), sm = ds ? midx(ds[0], ds[1]) : null, end = ds ? sm + TAIL : null;
+  const ds = pd(stop), sm = ds ? midx(ds[0], ds[1]) : null, end = ds ? sm + (Number.isFinite(+r.tail) ? +r.tail : TAIL) : null;
   if(r.typ === 'Новинка'){
     const dt = pd(target);
     if(!dt){ if(r.target || r.cells.some(Boolean)) { for(let j = 0; j < H; j++) cells[j] = r.cells[j] && CH.includes(r.cells[j]) ? ch : r.cells[j]; } return [cells, conf]; }
@@ -362,9 +362,9 @@ function cellHTML(r, E, j){
 if(D.repo){ document.getElementById('refresh').style.display=''; document.getElementById('refreshBtn').href = D.repo + '/actions/workflows/rebuild.yml'; }
 const s = D.stat;
 document.getElementById('meta').innerHTML = D.src === 'superset'
- ? `Собрано <b>${D.built}</b> · статусы и даты остановки — <b>1С (vv06.Har_kontr) на ${s.week}</b> · канал — факт матрицы ТТ (ClickHouse, 4 недели) · хвост выработки после месяца остановки — ${TAIL} мес. (оценка по продажам показана в строке) · горизонт <b>${M[0]} — ${M[H-1]}</b><br>
+ ? `Собрано <b>${D.built}</b> · статусы и даты остановки — <b>1С (vv06.Har_kontr) на ${s.week}</b> · канал — факт матрицы ТТ (ClickHouse, 4 недели) · хвост выработки после месяца остановки — расчёт по остаткам и продажам (формула в подсказке столбца «Хвост выработки») · горизонт <b>${M[0]} — ${M[H-1]}</b> (${H} мес.)<br>
   Через Superset: 1С-характеристики (${s['909_all']} строк, ${s['909_in']} SKU), карточки новинок (${s.cards_new} новых, ${s.cards_matched} сопоставлено с трекером), продажи и остатки. Через API Трекера: трекер вывода SKUWITHDRAW (возобновления и плановые выводы) и трекер новинок NEWPRODUCT, доска «Путь Напитки» (статус, дата ввода, наименование, in-out, география поставки).`
- : `Собрано <b>${D.built}</b> · данные 1С: отчёт <b>909</b> (неделя ${s.week}) · горизонт <b>${M[0]} — ${M[H-1]}</b> · хвост распродажи после даты остановки: <b>${TAIL} мес.</b><br>
+ : `Собрано <b>${D.built}</b> · данные 1С: отчёт <b>909</b> (неделя ${s.week}) · горизонт <b>${M[0]} — ${M[H-1]}</b> (${H} мес.) · хвост распродажи после даты остановки: <b>${TAIL} мес.</b><br>
   Источники: 909 Алко-Напитки, трекер новинок NEWPRODUCT (выгрузка 07.10.2026), остатки сезонного возобновления. Трекер вывода и история продаж пока не подключены.`;
 
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
@@ -417,7 +417,7 @@ function renderSvod(){
     ['Моих правок', log.length, nEd ? `${nEd} поз. изменено` : 'свод по исходным данным'],
     ['Требуют внимания', D.rows.filter(r=>r.flags.length).length, `из ${D.rows.length} позиций`],
   ].map(([l,v,d])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
-  document.getElementById('svodNote').innerHTML = `<span>Разрез: <b>&nbsp;${VN[view]}</b>.</span><span>«Хвост» — выработка остатка после даты остановки (${TAIL} мес.), канал берётся из столбца «Канал» позиции.</span><span>+N / −N — изменение к предыдущему месяцу.</span>`;
+  document.getElementById('svodNote').innerHTML = `<span>Разрез: <b>&nbsp;${VN[view]}</b>.</span><span>«Хвост» — выработка остатка после даты остановки: (остаток на ТТ + остаток этикетки) ÷ продажи за месяц, до ${s.tail_max} мес.; канал берётся из столбца «Канал» позиции.</span><span>+N / −N — изменение к предыдущему месяцу.</span>`;
   document.getElementById('ecnt').textContent = log.length || '';
 }
 function openList(cat, sub, j){
@@ -458,7 +458,7 @@ function renderPos(){
     const dt = (k, v, ok) => ok ? `<input type="text" class="dt${e[k]!=null?' ed':''}" data-i="${r.i}" data-k="${k}" value="${esc(v)}" placeholder="дд.мм.гггг">` : `<span class="mu">${esc(v)}</span>`;
     h += `<tr class="${isEdited(r)?'edited':''}"><td class="sticky1 subc" title="${esc(r.sub)}">${esc(r.sub)}</td><td class="sticky2 name" title="${esc(r.name)}${r.name_work?' · рабочее название в трекере: '+esc(r.name_work):''}">${esc(r.name)}</td><td><span class="tag s-${({'Текущий ассортимент':'cur','На вывод':'out','Новинка':'new','Возобновление':'res'})[r.seg]}">${r.seg}</span></td><td class="mu">${esc(r.src)}</td>`
       + Array.from({length:H},(_,j)=>`<td class="mc${e.cells[j]!==undefined?' ed':''}" data-i="${r.i}" data-j="${j}">${cellHTML(r,E,j)}</td>`).join('')
-      + `<td title="${esc(r.chsrc||'')}"><select data-i="${r.i}" class="edCh">${CH.map(o=>`<option${o===E.ch?' selected':''}>${o}</option>`).join('')}</select>${r.chsrc==='факт матрицы ТТ'?' <span class="tag">факт</span>':''}</td><td>${esc(r.st1c)}</td><td>${dt('stop',E.stop,true)}</td><td>${esc(r.stnew)}${r.ready?` <span class="tag">${r.ready}</span>`:''}</td><td>${dt('target',E.target,r.typ!=='Текущий')}</td><td>${esc(r.inout)}</td><td class="mu">${esc(r.reason)}</td><td class="mu">${esc(r.tail)}${r.tail_sales?` <span title="оценка по продажам: остаток на ТТ ÷ средние продажи за 3 мес.">(по продажам ${esc(r.tail_sales)})</span>`:''}</td><td class="mu">${esc(r.supp)}</td><td class="mu">${esc(r.id)}${r.id&&r.key?'<br>':''}${esc(r.key)}</td>`
+      + `<td title="${esc(r.chsrc||'')}"><select data-i="${r.i}" class="edCh">${CH.map(o=>`<option${o===E.ch?' selected':''}>${o}</option>`).join('')}</select>${r.chsrc==='факт матрицы ТТ'?' <span class="tag">факт</span>':''}</td><td>${esc(r.st1c)}</td><td>${dt('stop',E.stop,true)}</td><td>${esc(r.stnew)}${r.ready?` <span class="tag">${r.ready}</span>`:''}</td><td>${dt('target',E.target,r.typ!=='Текущий')}</td><td>${esc(r.inout)}</td><td class="mu">${esc(r.reason)}</td><td class="mu" title="${esc(r.tail_sales||'')}">${esc(r.tail)}${r.tail_sales?` <span class="mu" style="font-size:11px;cursor:help">ⓘ</span>`:''}</td><td class="mu">${esc(r.supp)}</td><td class="mu">${esc(r.id)}${r.id&&r.key?'<br>':''}${esc(r.key)}</td>`
       + `<td>${r.flags.map(f=>`<span class="tag w">${esc(f)}</span>`).join('')}</td><td><input type="text" class="cm" data-i="${r.i}" value="${esc(e.cm||'')}"></td></tr>`;
   });
   const t = document.getElementById('pos'); t.innerHTML = h + '</tbody>';
@@ -585,7 +585,7 @@ function renderMeth(){
   <h3>Как собрано</h3>
   <ul>
    <li><b>База — SKU с продажами за период.</b> Из характеристик 1С (vv06, через Superset; подгруппы пути Напитки без Мировых брендов) берутся только SKU с продажами за 3 полных месяца или присутствием в матрице ТТ за 4 недели: ${s['909_in']} SKU; позиции с датой остановки остаются в любом случае (их ведёт трекер вывода); ${s.nosales} характеристик без продаж исключены. Статус позиции: есть рабочая активная характеристика → продаётся; иначе активная с будущей датой остановки → в продаже до месяца остановки, затем хвост; иначе выведенная — последняя дата остановки.</li>
-   <li><b>Хвост выработки</b> — ${TAIL} мес. после месяца остановки (договорённость 23.10, первый этап; формула из трекера вывода подключается позже). Оценка по продажам — остаток на ТТ ÷ средние продажи за 3 мес., от 1 до 3 мес. — показана в столбце «Хвост выработки» для ${s.tail_fact} поз. для сверки.</li>
+   <li><b>Хвост выработки</b> (решение 27.10) — сколько месяцев после месяца остановки товар ещё продаётся с остатков: <b>(остаток на ТТ на вчера + остаток тиража этикетки из трекера вывода) ÷ средние месячные продажи за 3 полных месяца</b>, округление вверх, от 0 до ${s.tail_max} мес. Остаток и продажи — ClickHouse mart_mixed.dtt, этикетка — поле «Остаток этикетки» задачи SKUWITHDRAW (заполнено у ${D.rows.filter(r=>/этикетка/.test(r.tail_sales||'')).length} поз.). Для будущих остановок берётся текущая обеспеченность остатком: пополнение держит её примерно постоянной до даты остановки. Расчёт есть для ${s.tail_fact} поз.; без продаж за 3 мес. — ${TAIL} мес. по умолчанию с флагом. Формула каждой позиции — в подсказке столбца «Хвост выработки, мес»; ячейки хвоста всегда помечены как план (штриховка). Чего нет в расчёте: остаток на РЦ и у поставщика (в источниках нет) и падение продаж по мере вымывания с полок — поэтому оценка скорее верхняя.</li>
    <li><b>Канал</b> — по факту матрицы ТТ за 4 недели: позиция в ассортименте дарксторов → онлайн, магазинов → офлайн, обоих → офф+онл (${s.ch_fact} поз., помечены «факт»). Без продаж — правило по подгруппе (пиво, сидр, алкогольная медовуха — офлайн; остальное — офф+онл).</li>
    <li><b>Сезонные возобновления</b> — с месяца «Дата возобновления» до конца горизонта. Подтверждено только со статусом «готово». Источник — трекер вывода SKUWITHDRAW: ${s.voz_in} позиций с датой возобновления, ${s.voz_unmatched} не найдены в 1С. Плановая дата вывода из трекера, которой ещё нет в 1С, показывается как план (серая зона).</li>
    <li><b>Новинки</b> — трекер NEWPRODUCT (${s.new_all} задач): в матрицу берутся только рабочие статусы от «Согласование наименования» до «Открыть SKU» — ${s.new_taken}; не берутся ${s.new_skipped} (беклог, отложено, торг, согласование КП, дегустация, в продаже, постоянный ассортимент, отказ, закрыто — решение заказчика 23.10). Уже в 1С с поставкой — учтены через 1С (${s.new_insale_ok}); без месяца ввода — ${s.new_nodate}; в плане — ${s.new_inplan}. Со статуса «Заведение в ЛК» карточка должна быть в 1С: сопоставление по «Наименование в 1С», ${s.cards_matched} новинок получили ID, не найдено — ${s.new_card_missing} (флаг). Если месяц ввода прошёл, а продаж нет — старт в ${M[0]} с флагом.</li>
@@ -593,7 +593,7 @@ function renderMeth(){
   </ul>
   <h3>Чего пока нет</h3>
   <ul>
-   <li>Формула хвоста выработки из трекера вывода (остаток тиража этикетки + склад поставщика ÷ продажи) — пока ${TAIL} мес. и оценка по продажам рядом.</li>
+   <li>Остаток на РЦ и складе поставщика в формуле хвоста — когда появится источник (сейчас только остаток на ТТ и остаток этикетки из трекера).</li>
    <li>География поставки новинок из трекера (поле появится у Кости) — пока канал новинок по полкам из трекера или по правилу.</li>
    <li>Конечный месяц для in-out новинок и дата окончания сезона для возобновлений — в выгрузках их нет; задаются вручную в «Дата остановки / окончания», иначе позиция тянется до конца горизонта с флагом.</li>
    <li>Трекер новинок по API — ждём доступ к очереди NEWPRODUCT; пока выгрузка CSV.</li>
