@@ -259,18 +259,19 @@ def norm_src(s):   # единый формат подписи источника
 # SKU с продажами за период, которых нет среди характеристик 1С (vv06) вообще — свежие вводы / расхождение справочников
 ids_in_rows = set(x['id'] for x in rows if x['id'])
 VOZ_UNMATCHED_IDS = set(str(x['ID тов']) for x in voz_unmatched if pd.notna(x['ID тов']) and str(x['ID тов']))
-N_CH_ONLY = 0
+N_CH_ONLY = 0; CH_ONLY_LIST = []
 for _, x in chn.iterrows():
     if x.ID in ids_in_rows or x.ID in set(hk.sku_id.astype(int).astype(str)) or str(x.ID) in VOZ_UNMATCHED_IDS:
         continue
     sub = str(x.grp); name = str(x.nm); cat = category_for(sub, name); ch = x.channel or channel_for(cat, sub, name)
     prob('Есть продажи за период, но нет характеристики в 1С — в матрицу не добавлен (источник ClickHouse не учитывается)', 'Продажи', name, f'ID {x.ID}, {sub}')
+    CH_ONLY_LIST.append(f'{name} (ID {x.ID}, {sub})')
     N_CH_ONLY += 1   # по решению 27.10 такие SKU в матрицу не добавляются (нет характеристики 1С) — только счётчик
     continue
     rows.append(dict(cat=cat, sub=sub, id=x.ID, key='', name=name, w='', typ='Текущий', st1c='—', stop='', reason='', stnew='', target='', inout='',
                      ch=ch, cells=[ch] * H, conf=[1] * H, ready='', flags=['есть продажи за период, но нет характеристики в 1С (vv06) — проверьте справочник'],
                      backlog=0, supp='', tail=TAIL, tail_sales='', chsrc='факт матрицы ТТ', src='Продажи (ClickHouse)'))
-stat['nosales'] = N_NOSALES; stat['nosales_new'] = N_NOSALES_NEW; stat['ch_only'] = N_CH_ONLY
+stat['nosales'] = N_NOSALES; stat['nosales_new'] = N_NOSALES_NEW; stat['ch_only'] = N_CH_ONLY; stat['ch_only_list'] = CH_ONLY_LIST
 
 SUB_BY_NAME = [('квас','Квасы'),('морс','Морсы. Компоты. Кисели'),('компот','Морсы. Компоты. Кисели'),('кисел','Морсы. Компоты. Кисели'),
                ('смузи','Смузи'),('комбуч','Комбучи'),('лимонад','Лимонады в стекле, пэт'),('сок ','Соки'),('нектар','Соки'),('сидр','Сидр. Пуаре'),
