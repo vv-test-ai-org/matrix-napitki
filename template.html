@@ -48,6 +48,8 @@ section{display:none} section.on{display:block}
 .kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .kpi .v{font-size:26px;font-weight:650;margin-top:2px}
 .kpi .d{color:var(--muted);font-size:12px}
+.segs{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--surface)}
+.segs label{display:inline-flex;gap:4px;align-items:center;cursor:pointer;white-space:nowrap}
 .controls{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin:0 0 12px;color:var(--muted);font-size:13px}
 .controls label{display:flex;gap:6px;align-items:center;cursor:pointer}
 select,input[type=search],input[type=text]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
@@ -193,7 +195,7 @@ dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
     <div class="controls">
       <select id="fCat"><option value="">Все категории</option></select>
       <select id="fSub"><option value="">Все подгруппы</option></select>
-      <select id="fTyp"><option value="">Все сегменты</option><option>Текущий ассортимент</option><option>На вывод</option><option>Новинка</option><option>Возобновление</option></select><select id="fSrc"><option value="">Все источники</option><option>1С</option><option>1С + Трекер</option><option>Трекер</option></select><select id="fFlagK"><option value="">Любой флаг</option></select>
+      <span class="segs" id="fTyp" title="Отметьте один или несколько сегментов; ничего не отмечено — все"><label><input type="checkbox" value="Текущий ассортимент"> Текущий</label><label><input type="checkbox" value="На вывод"> На вывод</label><label><input type="checkbox" value="Новинка"> Новинки</label><label><input type="checkbox" value="Возобновление"> Возобновления</label></span><select id="fSrc"><option value="">Все источники</option><option>1С</option><option>1С + Трекер новинок</option><option>1С + Трекер вывода</option><option>Трекер новинок</option><option>Трекер вывода</option></select><select id="fFlagK"><option value="">Любой флаг</option></select>
       <label><input type="checkbox" id="fPlan"> только план</label>
       <label><input type="checkbox" id="fFlag"> только с флагами</label>
       <label><input type="checkbox" id="fEd"> только изменённые</label>
@@ -440,8 +442,8 @@ const COLS2 = [['ch','Канал'],['st1c','Статус 1С'],['stop','Дата
 function renderPos(){
   effAll();
   const q = document.getElementById('fQ').value.trim().toLowerCase();
-  const typ = document.getElementById('fTyp').value, onlyPlan = document.getElementById('fPlan').checked, onlyFlag = document.getElementById('fFlag').checked, onlyEd = document.getElementById('fEd').checked;
-  let list = D.rows.filter(r => { const E = EFF.get(r.i); return (!fCat.value||r.cat===fCat.value) && (!fSub.value||r.sub===fSub.value) && (!typ||r.seg===typ) && (!document.getElementById('fSrc').value||r.src===document.getElementById('fSrc').value) && (!fFlagK.value||r.flags.some(f=>flagKey(f)===fFlagK.value))
+  const typ = segSel(), onlyPlan = document.getElementById('fPlan').checked, onlyFlag = document.getElementById('fFlag').checked, onlyEd = document.getElementById('fEd').checked;
+  let list = D.rows.filter(r => { const E = EFF.get(r.i); return (!fCat.value||r.cat===fCat.value) && (!fSub.value||r.sub===fSub.value) && (!typ.length||typ.includes(r.seg)) && (!document.getElementById('fSrc').value||r.src===document.getElementById('fSrc').value) && (!fFlagK.value||r.flags.some(f=>flagKey(f)===fFlagK.value))
     && (!onlyPlan || E.conf.some((c,j)=>!c && E.cells[j])) && (!onlyFlag || r.flags.length) && (!onlyEd || isEdited(r))
     && (!q || (r.name+' '+r.id+' '+r.key).toLowerCase().includes(q)); });
   const gv = (r,k) => k==='idk' ? (r.id||r.key) : (['ch','stop','target'].includes(k) ? EFF.get(r.i)[k] : r[k]);
@@ -483,7 +485,9 @@ function cellMenu(td, ev){
 }
 function commit(rerender=true){ save(); renderLog(); if(rerender){ renderPos(); } renderSvod(); }
 fCat.onchange = () => { fillSubs(); renderPos(); };
-['fSub','fTyp','fSrc','fFlagK','fPlan','fFlag','fEd'].forEach(id => document.getElementById(id).onchange = renderPos);
+['fSub','fSrc','fFlagK','fPlan','fFlag','fEd'].forEach(id => document.getElementById(id).onchange = renderPos);
+function segSel(){ return [...document.querySelectorAll('#fTyp input:checked')].map(i => i.value); }
+document.querySelectorAll('#fTyp input').forEach(i => i.onchange = renderPos);
 document.getElementById('fQ').oninput = renderPos;
 
 // ---------- log
@@ -521,7 +525,7 @@ document.getElementById('dlXlsx').onclick = async () => {
   ws['!cols'] = rows[0].map((h, j) => ({wch: j === 2 ? 48 : (j === 18 + M.length || j === 17 + M.length) ? 40 : Math.min(28, Math.max(8, String(h).length + 2))}));
   ws['!freeze'] = {xSplit: 3, ySplit: 1}; ws['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:rows.length-1, c:rows[0].length-1}})};
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Позиции');
-  const meta = XLSX.utils.aoa_to_sheet([['Собрано', D.built], ['Строк в выгрузке', rows.length - 1], ['Фильтры', ['fCat','fSub','fTyp','fSrc'].map(id => document.getElementById(id).value).filter(Boolean).join(', ') || 'все'], ['Горизонт', M[0] + ' — ' + M[M.length-1]], ['Виды ячеек', 'офф+онл / оффлайн / онлайн — в продаже; хвост — выработка остатка; старт — ввод новинки; возобновление — возврат в сезон; пусто — нет в продаже']]);
+  const meta = XLSX.utils.aoa_to_sheet([['Собрано', D.built], ['Строк в выгрузке', rows.length - 1], ['Фильтры', [...['fCat','fSub','fSrc'].map(id => document.getElementById(id).value), segSel().join('+')].filter(Boolean).join(', ') || 'все'], ['Горизонт', M[0] + ' — ' + M[M.length-1]], ['Виды ячеек', 'офф+онл / оффлайн / онлайн — в продаже; хвост — выработка остатка; старт — ввод новинки; возобновление — возврат в сезон; пусто — нет в продаже']]);
   meta['!cols'] = [{wch: 20}, {wch: 90}]; XLSX.utils.book_append_sheet(wb, meta, 'О выгрузке');
   XLSX.writeFile(wb, name + '.xlsx');
 };
@@ -560,7 +564,7 @@ function renderMeth(){
    <li><span class="tag s-out">На вывод</span> — в 1С статус «На вывод» или «Приостановлена», либо плановая дата вывода из трекера: до месяца остановки включительно — в продаже, дальше — «хвост» выработки.</li>
    <li><span class="tag s-new">Новинка</span> — только задача трекера NEWPRODUCT в рабочем статусе (от «Согласование наименования» до «Открыть SKU»); карточки 1С «Новая» без задачи трекера в матрицу не берутся. Считается с месяца ввода; без даты — не считается, пока дату не задать. Название — «Наименование в 1С», если уже присвоено (рабочее — в подсказке).</li>
    <li><span class="tag s-res">Возобновление</span> — позиция из трекера вывода SKUWITHDRAW (статус «Планируется возвращение в сезон» или есть дата возобновления): продаётся с месяца возврата.</li>
-   <li><b>Источник</b> в строке: «1С» — только характеристика 1С; «1С + Трекер» — позиция есть и в 1С, и в трекере (новинок или вывода; ключ задачи показан в «ID / ключ»); «Трекер» — только задача трекера, в 1С не найдена.</li>
+   <li><b>Источник</b> в строке: «1С» — только характеристика 1С; «1С + Трекер новинок» / «1С + Трекер вывода» — позиция есть и в 1С, и в соответствующем трекере (ключ задачи в «ID / ключ»); «Трекер новинок» / «Трекер вывода» — только задача трекера, в 1С не найдена.</li>
   </ul>
   <h3>Значения в ячейках месяцев</h3>
   <div class="legend">${lg}<span><span class="cl k-oo plan r-высокая">офф+онл</span>штриховка — план (ещё не в 1С); чем бледнее, тем ниже готовность новинки</span><span><span class="cl k-none">—</span>не продаётся, не считается</span></div>

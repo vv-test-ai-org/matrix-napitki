@@ -253,9 +253,11 @@ for _, x in r.iterrows():
                      stnew=(vz_status or stnew_tr), target=(vz['Дата возобновления'].strftime('%d.%m.%Y') if vz is not None and pd.notna(vz['Дата возобновления']) else ''),
                      inout='', ch=ch, cells=cells, conf=conf, ready='', flags=flags, backlog=0, supp=x['supp'], tail=tail, tail_sales=tail_sales, chsrc=('факт матрицы ТТ' if x['ID'] in CH_FACT else 'правило'), src=('1С + трекер вывода' if (vz is not None or pl is not None) else '1С')))
 stat['909_prev'] = excluded_prev
-def norm_src(s):   # единый формат подписи источника (27.10): «1С», «Трекер», «1С + Трекер»
+def norm_src(s):   # единый формат подписи источника (27.10): «1С», «Трекер новинок», «Трекер вывода», «1С + Трекер …»
     s = str(s); has1c = '1С' in s; hastr = 'рекер' in s
-    return '1С + Трекер' if (has1c and hastr) else ('Трекер' if hastr else '1С')
+    if not hastr: return '1С'
+    tr = 'Трекер вывода' if 'вывода' in s else 'Трекер новинок'
+    return ('1С + ' + tr) if has1c else tr
 # SKU с продажами за период, которых нет среди характеристик 1С (vv06) вообще — свежие вводы / расхождение справочников
 ids_in_rows = set(x['id'] for x in rows if x['id'])
 VOZ_UNMATCHED_IDS = set(str(x['ID тов']) for x in voz_unmatched if pd.notna(x['ID тов']) and str(x['ID тов']))
