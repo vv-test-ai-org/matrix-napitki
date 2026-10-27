@@ -70,7 +70,7 @@ import math
 hk = pd.read_csv(X + 'har_kontr.csv')
 hk['status_1c'] = hk['status_1c'].fillna('').replace('', 'Рабочая')
 hk['stop_dt'] = pd.to_datetime(hk['stop_dt'])
-DATA_DT = pd.Timestamp('2026-10-23')
+DATA_DT = pd.Timestamp('2026-10-27')
 def decide(g):
     act = g[g.activity_status == 'Активная']
     if ((act.status_1c == 'Рабочая')).any():
@@ -95,7 +95,7 @@ r['ID'] = r.sku_id.astype(int).astype(str)
 r['Товар'] = r['name']; r['Подгруппа'] = r['sub']
 r['grp'] = [('Алкоголь' if (ia == 1 or (sb in ALC and sb != 'Медовуха')) else 'Напитки') for ia, sb in zip(r.is_alc, r['sub'])]
 r['Статус'] = r['st']; r['Статус Акт Хар'] = r['act']
-n909_all = len(hk); week = '2026-10-23'
+n909_all = len(hk); week = '2026-10-27'
 
 # channel by fact of store matrix (ClickHouse, last 4 weeks)
 chn = pd.read_csv(X + 'channel_ch.csv'); chn['ID'] = chn.sku_id.astype(int).astype(str)
@@ -430,10 +430,10 @@ for i, x in enumerate(rows):
     else: x['seg'] = 'Текущий ассортимент'
 wx = json.load(open(X + 'weather.json'))
 sources = [
-  dict(what='Текущий ассортимент: статусы характеристик, даты остановки, причины, поставщики', src='1С (vv06): dbo.Har_kontr + dbo.tovari', how='Superset SQL Lab, database_id 11', dt='2026-10-23', rows=f"{n909_all} характеристик → {n909} SKU с продажами за период (ещё {N_NOSALES} без продаж исключены)"),
-  dict(what='Канал (офлайн / онлайн / сеть) по факту матрицы ТТ за 4 недели', src='ClickHouse mart_mixed.dtt + report.v_org_unit_actual.is_dark_store', how='Superset SQL Lab, database_id 92', dt='2026-10-23', rows=f"{len(chn)} SKU"),
-  dict(what='Хвост распродажи: остаток на ТТ и средние продажи за 3 мес.', src='ClickHouse mart_mixed.dtt', how='Superset SQL Lab, database_id 92', dt='2026-10-23', rows=f"{N_TAIL} SKU"),
-  dict(what='Карточки новинок в 1С (для сопоставления с трекером по наименованию)', src='Greenplum report.v_sku_actual', how='Superset SQL Lab, database_id 76', dt='2026-10-23', rows=f"{len(cards)} карточек"),
+  dict(what='Текущий ассортимент: статусы характеристик, даты остановки, причины, поставщики', src='1С (vv06): dbo.Har_kontr + dbo.tovari', how='Superset SQL Lab, database_id 11', dt='2026-10-27', rows=f"{n909_all} характеристик → {n909} SKU с продажами за период (ещё {N_NOSALES} без продаж исключены)"),
+  dict(what='Канал (офлайн / онлайн / сеть) по факту матрицы ТТ за 4 недели', src='ClickHouse mart_mixed.dtt + report.v_org_unit_actual.is_dark_store', how='Superset SQL Lab, database_id 92', dt='2026-10-27', rows=f"{len(chn)} SKU"),
+  dict(what='Хвост распродажи: остаток на ТТ и средние продажи за 3 мес.', src='ClickHouse mart_mixed.dtt', how='Superset SQL Lab, database_id 92', dt='2026-10-27', rows=f"{N_TAIL} SKU"),
+  dict(what='Карточки новинок в 1С (для сопоставления с трекером по наименованию)', src='Greenplum report.v_sku_actual', how='Superset SQL Lab, database_id 76', dt='2026-10-27', rows=f"{len(cards)} карточек"),
   dict(what='План новинок: статус, дата ввода, присвоенное наименование, in-out и последняя дата продажи, география поставки', src='Яндекс.Трекер, очередь NEWPRODUCT, доска 4306 «Путь Напитки»',
        how=('API Трекера через ya-tracker (fetch_tracker.py)' if 'Дата ввода' in n.columns else 'выгрузка CSV (файл)'),
        dt=date.fromtimestamp(os.path.getmtime(X + 'new.csv')).isoformat(), rows=f"{stat['new_all']} задач, в матрице {stat['new_taken']}"),

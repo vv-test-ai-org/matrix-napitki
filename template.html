@@ -199,6 +199,7 @@ dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
       <label><input type="checkbox" id="fEd"> только изменённые</label>
       <input type="search" id="fQ" placeholder="Поиск по названию, ID, ключу">
       <span id="fN"></span>
+      <button class="btn" id="dlXlsx" title="Текущий отфильтрованный список со всеми столбцами и месяцами">Скачать в Excel</button>
     </div>
     <div class="legend" style="margin:0 0 10px">Клик по ячейке месяца — сменить канал или убрать из продажи. Даты ввода и остановки редактируются прямо в строке, месяцы перестраиваются автоматически (для in-out новинки «Дата остановки / окончания» — последний месяц продаж). Все изменения попадают во вкладку «Мои правки».</div>
     <div class="wrap"><table id="pos"></table></div>
@@ -434,6 +435,7 @@ function fillSubs(){ const cur=fSub.value; fSub.length=1; [...new Set(D.rows.fil
 fillSubs();
 let sortK = null, sortDir = 1;
 const COLS = [['sub','Подгруппа'],['name','Товар'],['seg','Сегмент'],['src','Источник']];
+let POS_LIST = [];
 const COLS2 = [['ch','Канал'],['st1c','Статус 1С'],['stop','Дата остановки / окончания'],['stnew','Статус новинки / возобн.'],['target','Дата ввода / возобн.'],['inout','In-out'],['reason','Причина остановки'],['tail','Хвост выработки, мес'],['supp','Поставщик'],['idk','ID / ключ']];
 function renderPos(){
   effAll();
@@ -446,6 +448,7 @@ function renderPos(){
   if(sortK) list = list.slice().sort((a,b)=> String(gv(a,sortK)).localeCompare(String(gv(b,sortK)),'ru',{numeric:true})*sortDir);
   else list = list.slice().sort((a,b)=> CAT_ORDER.indexOf(a.cat)-CAT_ORDER.indexOf(b.cat) || a.sub.localeCompare(b.sub,'ru') || TYPO.indexOf(a.typ)-TYPO.indexOf(b.typ) || a.name.localeCompare(b.name,'ru'));
   document.getElementById('fN').textContent = list.length + ' поз.';
+  POS_LIST = list;
   let h = `<thead><tr>${COLS.map(([k,l],i)=>`<th data-k="${k}" class="${i===0?'sticky1 subc':i===1?'sticky2':''}">${l}${sortK===k?(sortDir>0?' ↑':' ↓'):''}</th>`).join('')}${M.map(m=>`<th style="text-align:center">${m}</th>`).join('')}${COLS2.map(([k,l])=>`<th data-k="${k}">${l}${sortK===k?(sortDir>0?' ↑':' ↓'):''}</th>`).join('')}<th>Флаги</th><th>Комментарий</th></tr>`
     + `</thead><tbody>`;
   list.forEach(r => {
@@ -496,6 +499,32 @@ function renderLog(){
   t.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => undoLog(+b.dataset.id));
 }
 ['lgQ','lgField','lgSort'].forEach(id => document.getElementById(id)[id==='lgQ'?'oninput':'onchange'] = renderLog);
+// выгрузка вкладки «Позиции» в Excel: SheetJS подгружается с CDN при первом нажатии, без сети — CSV
+function posTable(){
+  const head = ['Категория','Подгруппа','Товар','Сегмент','Источник','ID','Ключ трекера','Канал','Статус 1С','Дата остановки / окончания','Статус новинки / возобн.','Дата ввода / возобн.','In-out','Причина остановки','Хвост выработки, мес','Поставщик', ...M, 'План (неподтверждённые месяцы)','Флаги','Комментарий','Изменено вручную'];
+  const body = POS_LIST.map(r => { const E = EFF.get(r.i), e = edits[r.i] || {};
+    return [r.cat, r.sub, r.name, r.seg, r.src, r.id || '', r.key || '', E.ch, r.st1c, E.stop, r.stnew, E.target, r.inout, r.reason, r.tail, r.supp,
+      ...E.cells.map(c => c || ''), M.filter((m,j) => E.cells[j] && !E.conf[j]).join(', '), r.flags.join('; '), e.cm || '', isEdited(r) ? 'да' : '']; });
+  return [head, ...body];
+}
+function dlCsv(rows, name){
+  const csv = '\ufeff' + rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'})); a.download = name + '.csv'; a.click();
+}
+document.getElementById('dlXlsx').onclick = async () => {
+  const rows = posTable(), name = 'Матрица_Напитки_Алкоголь_позиции_' + D.built.replace(/\./g, '-');
+  if(!window.XLSX){
+    try { await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); setTimeout(no, 8000); }); }
+    catch(e){ dlCsv(rows, name); return; }
+  }
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = rows[0].map((h, j) => ({wch: j === 2 ? 48 : (j === 18 + M.length || j === 17 + M.length) ? 40 : Math.min(28, Math.max(8, String(h).length + 2))}));
+  ws['!freeze'] = {xSplit: 3, ySplit: 1}; ws['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:rows.length-1, c:rows[0].length-1}})};
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Позиции');
+  const meta = XLSX.utils.aoa_to_sheet([['Собрано', D.built], ['Строк в выгрузке', rows.length - 1], ['Фильтры', ['fCat','fSub','fTyp','fSrc'].map(id => document.getElementById(id).value).filter(Boolean).join(', ') || 'все'], ['Горизонт', M[0] + ' — ' + M[M.length-1]], ['Виды ячеек', 'офф+онл / оффлайн / онлайн — в продаже; хвост — выработка остатка; старт — ввод новинки; возобновление — возврат в сезон; пусто — нет в продаже']]);
+  meta['!cols'] = [{wch: 20}, {wch: 90}]; XLSX.utils.book_append_sheet(wb, meta, 'О выгрузке');
+  XLSX.writeFile(wb, name + '.xlsx');
+};
 document.getElementById('dlLog').onclick = () => {
   if(!log.length){ alert('Правок пока нет'); return; }
   const lines = [['когда','ID','ключ трекера','товар','подгруппа','тип','что изменено','было','стало','итоговый канал','итоговая дата остановки','итоговая дата ввода','комментарий']];
