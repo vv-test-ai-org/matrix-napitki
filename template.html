@@ -193,7 +193,7 @@ dialog .bd{max-height:65vh;overflow:auto;padding:0 18px 14px}
     <div class="controls">
       <select id="fCat"><option value="">Все категории</option></select>
       <select id="fSub"><option value="">Все подгруппы</option></select>
-      <select id="fTyp"><option value="">Все сегменты</option><option>Текущий ассортимент</option><option>На вывод</option><option>Новинка</option><option>Возобновление</option></select><select id="fSrc"><option value="">Все источники</option><option>1С</option><option>1С + трекер</option><option>Трекер</option><option>Трекер + 1С</option><option>1С + трекер вывода</option><option>Трекер вывода</option><option>Продажи (ClickHouse)</option></select><select id="fFlagK"><option value="">Любой флаг</option></select>
+      <select id="fTyp"><option value="">Все сегменты</option><option>Текущий ассортимент</option><option>На вывод</option><option>Новинка</option><option>Возобновление</option></select><select id="fSrc"><option value="">Все источники</option><option>1С</option><option>1С + Трекер</option><option>Трекер</option></select><select id="fFlagK"><option value="">Любой флаг</option></select>
       <label><input type="checkbox" id="fPlan"> только план</label>
       <label><input type="checkbox" id="fFlag"> только с флагами</label>
       <label><input type="checkbox" id="fEd"> только изменённые</label>
@@ -556,11 +556,11 @@ function renderMeth(){
   <table><thead><tr><th>Что</th><th>Откуда</th><th>Как получено</th><th>Дата</th><th>Объём</th></tr></thead><tbody>${(D.sources||[]).map(x=>`<tr><td style="white-space:normal">${esc(x.what)}</td><td style="white-space:normal">${esc(x.src)}</td><td class="mu" style="white-space:normal">${esc(x.how)}</td><td class="mu">${esc(x.dt)}</td><td class="mu">${esc(x.rows)}</td></tr>`).join('')}</tbody></table>
   <h3>Сегменты</h3>
   <ul>
-   <li><span class="tag s-cur">Текущий ассортимент</span> — SKU с продажами или присутствием в матрице ТТ за период (3 полных месяца продаж + 4 недели матрицы ТТ) и рабочей характеристикой в 1С без даты остановки. Характеристики 1С без продаж за период в матрицу не входят (${s.nosales} шт.); SKU с продажами, которых нет в 1С, показаны с источником «Продажи (ClickHouse)» и флагом (${s.ch_only} шт.).</li>
+   <li><span class="tag s-cur">Текущий ассортимент</span> — SKU с продажами или присутствием в матрице ТТ за период (3 полных месяца продаж + 4 недели матрицы ТТ) и рабочей характеристикой в 1С без даты остановки. Характеристики 1С без продаж за период в матрицу не входят (${s.nosales} шт.). SKU с продажами, у которых нет характеристики в 1С, в матрицу не добавляются (${s.ch_only} шт. — см. «Требуют внимания»).</li>
    <li><span class="tag s-out">На вывод</span> — в 1С статус «На вывод» или «Приостановлена», либо плановая дата вывода из трекера: до месяца остановки включительно — в продаже, дальше — «хвост» выработки.</li>
    <li><span class="tag s-new">Новинка</span> — только задача трекера NEWPRODUCT в рабочем статусе (от «Согласование наименования» до «Открыть SKU»); карточки 1С «Новая» без задачи трекера в матрицу не берутся. Считается с месяца ввода; без даты — не считается, пока дату не задать. Название — «Наименование в 1С», если уже присвоено (рабочее — в подсказке).</li>
    <li><span class="tag s-res">Возобновление</span> — позиция из трекера вывода SKUWITHDRAW (статус «Планируется возвращение в сезон» или есть дата возобновления): продаётся с месяца возврата.</li>
-   <li><b>Источник</b> в строке: «1С» — текущий ассортимент; «1С + трекер» — позиция 1С, к которой найдена задача трекера (ключ NEWPRODUCT показан в «ID / ключ»); «Трекер» — только трекер; «Трекер + 1С» — задача трекера, сопоставленная с карточкой 1С по наименованию.</li>
+   <li><b>Источник</b> в строке: «1С» — только характеристика 1С; «1С + Трекер» — позиция есть и в 1С, и в трекере (новинок или вывода; ключ задачи показан в «ID / ключ»); «Трекер» — только задача трекера, в 1С не найдена.</li>
   </ul>
   <h3>Значения в ячейках месяцев</h3>
   <div class="legend">${lg}<span><span class="cl k-oo plan r-высокая">офф+онл</span>штриховка — план (ещё не в 1С); чем бледнее, тем ниже готовность новинки</span><span><span class="cl k-none">—</span>не продаётся, не считается</span></div>
