@@ -47,12 +47,19 @@ def sku(v):
     return v
 
 
-def ya(args):
-    r = subprocess.run(['ya-tracker'] + args + ['--json'], capture_output=True, text=True, cwd=os.path.expanduser('~'))
-    try:
-        return json.loads(r.stdout)
-    except ValueError:
-        return {'ok': False, 'error': {'code': 'NO_JSON', 'message': (r.stdout + r.stderr)[-300:]}}
+def ya(args, tries=3):
+    # API Трекера иногда обрывает ответ на середине (IncompleteRead) — повторяем несколько раз с паузой
+    import time
+    for i in range(tries):
+        r = subprocess.run(['ya-tracker'] + args + ['--json'], capture_output=True, text=True, cwd=os.path.expanduser('~'))
+        try:
+            d = json.loads(r.stdout)
+        except ValueError:
+            d = {'ok': False, 'error': {'code': 'NO_JSON', 'message': (r.stdout + r.stderr)[-300:]}}
+        if d.get('ok') or i == tries - 1:
+            return d
+        print(f'ya-tracker: попытка {i + 1} не удалась ({d["error"].get("code")}), повтор через 10 с', flush=True)
+        time.sleep(10)
 
 
 def fetch():
