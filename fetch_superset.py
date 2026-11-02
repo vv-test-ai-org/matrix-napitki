@@ -55,7 +55,12 @@ class Superset:
     def sql(self, database_id, sql, limit=20000, tries=60, pause=5):
         body = {'database_id': database_id, 'sql': sql, 'runAsync': False, 'queryLimit': limit,
                 'client_id': f'm{int(time.time()*1000) % 10**10:010d}'}   # поле client_id в Superset — varchar(11)
-        r = self.s.post(f'{self.base}/sqllab/execute/', json=body, timeout=600)
+        for attempt in range(4):   # 5xx от шлюза Superset бывают разовыми — повторяем с паузой
+            r = self.s.post(f'{self.base}/sqllab/execute/', json=body, timeout=600)
+            if r.status_code in (200, 202) or r.status_code < 500 or attempt == 3:
+                break
+            print(f'SQL Lab {r.status_code}, повтор через {15 * (attempt + 1)} с', flush=True)
+            time.sleep(15 * (attempt + 1)); body['client_id'] = f'm{int(time.time()*1000) % 10**10:010d}'
         if r.status_code not in (200, 202):
             raise RuntimeError(f'SQL Lab {r.status_code}: {r.text[:300]}')
         j = r.json()
