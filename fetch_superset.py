@@ -50,7 +50,7 @@ class Superset:
 
     def sql(self, database_id, sql, limit=20000, tries=60, pause=5):
         body = {'database_id': database_id, 'sql': sql, 'runAsync': False, 'queryLimit': limit,
-                'client_id': f'matrix{int(time.time()*1000) % 10**8:08d}'}
+                'client_id': f'm{int(time.time()*1000) % 10**10:010d}'}   # поле client_id в Superset — varchar(11)
         r = self.s.post(f'{self.base}/sqllab/execute/', json=body, timeout=600)
         if r.status_code not in (200, 202):
             raise RuntimeError(f'SQL Lab {r.status_code}: {r.text[:300]}')
