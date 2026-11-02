@@ -55,15 +55,20 @@ def main():
     args = set(sys.argv[1:])
     today = date.today().isoformat()
     if '--no-fetch' not in args:
-        run([PY, 'fetch_superset.py'])
+        have_superset = all(os.environ.get(k) for k in ('SUPERSET_URL', 'SUPERSET_USER', 'SUPERSET_PASSWORD'))
+        if have_superset:
+            run([PY, 'fetch_superset.py'])
+        else:   # без кредов Superset не падаем: 1С/ClickHouse/Greenplum остаются прежними, обновляются только трекеры
+            print('ВНИМАНИЕ: нет SUPERSET_USER/SUPERSET_PASSWORD в .env — выгрузка 1С/ClickHouse/Greenplum пропущена, '
+                  'данные Superset остаются от предыдущей выгрузки; обновляются только трекеры', flush=True)
         run([PY, 'fetch_tracker.py'])
-        # дата данных 1С — в build.py
-        b = (HERE / 'build.py').read_text(encoding='utf-8')
-        import re
-        b = re.sub(r"DATA_DT = pd\.Timestamp\('\d{4}-\d{2}-\d{2}'\)", f"DATA_DT = pd.Timestamp('{today}')", b)
-        b = re.sub(r"week = '\d{4}-\d{2}-\d{2}'", f"week = '{today}'", b)
-        b = re.sub(r"(database_id \d+', dt=)'\d{4}-\d{2}-\d{2}'", rf"\g<1>'{today}'", b)
-        (HERE / 'build.py').write_text(b, encoding='utf-8')
+        if have_superset:   # дата данных 1С — в build.py; без выгрузки Superset дату не трогаем
+            b = (HERE / 'build.py').read_text(encoding='utf-8')
+            import re
+            b = re.sub(r"DATA_DT = pd\.Timestamp\('\d{4}-\d{2}-\d{2}'\)", f"DATA_DT = pd.Timestamp('{today}')", b)
+            b = re.sub(r"week = '\d{4}-\d{2}-\d{2}'", f"week = '{today}'", b)
+            b = re.sub(r"(database_id \d+', dt=)'\d{4}-\d{2}-\d{2}'", rf"\g<1>'{today}'", b)
+            (HERE / 'build.py').write_text(b, encoding='utf-8')
     OUT.mkdir(exist_ok=True)
     out_html = OUT / f'Матрица_Напитки_Алкоголь_1С_{today}.html'
     run([PY, 'build.py', str(out_html)])
