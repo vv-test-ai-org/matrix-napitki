@@ -31,6 +31,10 @@ SOURCES = {
 }
 
 
+# имя колонки CSV → имя колонки в результате SQL, где они различаются
+RENAME = {'channel_ch': {'nm': 'sku_name', 'grp': 'subgroup'}}
+
+
 class Superset:
     def __init__(self):
         for k in ('SUPERSET_URL', 'SUPERSET_USER', 'SUPERSET_PASSWORD'):
@@ -80,8 +84,9 @@ def main():
         out = DATA / f'{nm}.csv'
         with open(out, 'w', encoding='utf-8', newline='') as f:
             w = csv.writer(f); w.writerow(cols)
+            rn = RENAME.get(nm, {})
             for row in data:
-                w.writerow(['' if row.get(c) is None else row.get(c, '') for c in cols])
+                w.writerow(['' if row.get(rn.get(c, c)) is None else row.get(rn.get(c, c), '') for c in cols])
         print(f'{nm}: {len(data)} строк → {out.name} ({time.time()-t0:.0f} с)')
     (DATA / 'superset_fetched.json').write_text(json.dumps({'date': time.strftime('%Y-%m-%d'), 'sources': names}, ensure_ascii=False))
 

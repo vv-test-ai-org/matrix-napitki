@@ -5,7 +5,9 @@ from datetime import date
 import os
 X = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data') + '/'
 OUT = sys.argv[1]
-M0 = (2026, 10)
+_SF = os.path.join(X, 'superset_fetched.json')
+SUPERSET_DT = json.load(open(_SF))['date'] if os.path.exists(_SF) else '2026-11-02'   # дата выгрузки 1С/ClickHouse/Greenplum
+M0 = (int(SUPERSET_DT[:4]), int(SUPERSET_DT[5:7]))   # первый месяц горизонта = месяц выгрузки
 H = 15
 TAIL = 1
 RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
@@ -70,8 +72,6 @@ import math
 hk = pd.read_csv(X + 'har_kontr.csv')
 hk['status_1c'] = hk['status_1c'].fillna('').replace('', 'Рабочая')
 hk['stop_dt'] = pd.to_datetime(hk['stop_dt'])
-_SF = os.path.join(X, 'superset_fetched.json')
-SUPERSET_DT = json.load(open(_SF))['date'] if os.path.exists(_SF) else '2026-11-02'   # дата выгрузки 1С/ClickHouse/Greenplum
 DATA_DT = pd.Timestamp(SUPERSET_DT)
 def decide(g):
     act = g[g.activity_status == 'Активная']
